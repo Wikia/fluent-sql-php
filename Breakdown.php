@@ -1,10 +1,9 @@
 <?php
 
 class Breakdown {
-
-	private $sql = '';
-	private $parameters = [];
-	var $doComma = false;
+	private $sql;
+	private $parameters;
+	public $doComma = false;
 
 	public function __construct($sql = '', $parameters = []){
 		$this->sql = $sql;
@@ -34,5 +33,4 @@ class Breakdown {
 	public function getParameters() {
 		return $this->parameters;
 	}
-
 }

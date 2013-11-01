@@ -1,27 +1,30 @@
 <?php
-
-interface ClauseBuild{
+interface ClauseBuild {
 	function build(Breakdown $bk, $tabs);
 }
 
 class Type implements ClauseBuild {
-	public $type;
-	var $types = [Type::SELECT, Type::INSERT, Type::UPDATE, Type::DELETE];
+	private static $types = [Type::SELECT, Type::INSERT, Type::UPDATE, Type::DELETE];
+
 	const SELECT = "SELECT";
 	const INSERT = "INSERT";
 	const UPDATE = "UPDATE";
 	const DELETE = "DELETE";
 
+	protected $type;
+
 	// TODO: throw something if the type is invalid?
 	public function __construct($type) {
+		if (!in_array($type, self::$types)) {
+			throw new InvalidArgumentException;
+		}
+
 		$this->type = $type;
 	}
 
 	public function build(Breakdown $bk, $tabs) {
-		if (in_array($this->type, $this->types)) {
-			$bk->append(Clause::tabs($tabs));
-			$bk->append(" " . $this->type);
-		}
+		$bk->tabs($tabs);
+		$bk->append(" ".$this->type);
 	}
 }
 
@@ -36,15 +39,15 @@ class With implements ClauseBuild {
 		$this->recursive = $recursive;
 	}
 
-	public function build (Breakdown $bk, $tabs) {
-		$bk->append(" ".$name);
+	public function build(Breakdown $bk, $tabs) {
+		$bk->append(" ".$this->name);
 		$bk->append(" AS ");
 		if($this->sql != null){
 			$bk->append(" (");
 			$bk->append(Clause::line($tabs));
-			$bk->append(Clause::tabs($tabs+1));
+			$bk->tabs($tabs + 1);
 			$this->sql->build($bk, $tabs);
-			$bk->append(Clause::line(tabs));
+			$bk->append(Clause::line($tabs));
 			$bk->append(" )");
 			$bk->append(Clause::line(0));
 		}
@@ -53,83 +56,38 @@ class With implements ClauseBuild {
 
 // Strict "Java" style is a lot more verbose, really
 class Distinct implements ClauseBuild {
-
-	protected $column;
 	protected $sql;
 
-	public function __construct($arg){
-		if ($arg instanceof SQL) {
-			$this->sql = $arg;
-		} else {
-			$this->column = $arg;
-		}
-	}
-
-	public function build (Breakdown $bk, $tabs) {
-		if($this->column != null){
-			$bk->append(" "+$this->column);
-		}
-		if($this->sql != null){
-			$this->sql->build($bk, $tabs);
-		}
-	}
-
-}
-
-class DistinctOn implements ClauseBuild {
-
-	protected $column;
-	protected $sql;
-
-	public function __construct($arg){
-		if ($arg instanceof SQL) {
-			$this->sql = $arg;
-		} else {
-			$this->column = $arg;
-		}
-	}
-
-	public function build (Breakdown $bk, $tabs) {
-		if($this->column != null){
-			$bk->append(" "+$this->column);
-		}
-		if($this->sql != null){
-			$this->sql->build($bk, $tabs);
-		}
-	}
-}
-
-
-/* // TODO: rewrite in more idiomatic "PHP" style
-
-class Distinct implements ClauseBuild {
-	protected $sql;
-
-	public function __construct ($sql) {
+	public function __construct($sql){
 		$this->sql = $sql;
 	}
 
-	public function build (Breakdown $bk, $tabs) {
-		if ( $this->sql instanceof SQL ) {
+	public function build(Breakdown $bk, $tabs) {
+		if ($this->sql instanceof SQL) {
 			$this->sql->build($bk, $tabs);
 		} else {
-			$bk->append(" "+$this->sql);
+			$bk->append(" ".$this->sql);
 		}
 	}
 }
-*/
+
+class DistinctOn extends Distinct {
+	// java DistinctOn code is equivalent to java Distinct code
+}
 
 class Field implements ClauseBuild {
 		protected $column;
 		protected $fieldSql;
 		protected $function;
 		protected $columnAs;
-		protected $values = [];
+		protected $values;
 		protected $condition; //Condition can also be in field
 
 		public function __construct( /*...*/ ) {
 			$argc = func_num_args();
 			$argv = func_get_args();
+
+			$this->values = [];
 			if ($argc > 1) {
 				foreach ($argv as $val) {
 					$this->values[] = new Values($val);
@@ -141,26 +99,27 @@ class Field implements ClauseBuild {
 				} elseif ($arg instanceof Condition) {
 					$this->condition = $arg;
 				} elseif ($arg instanceof SQL) {
-					$this->fieldSQL = $arg;
+					$this->fieldSql = $arg;
 				} else { // is_string
 					$this->column = $arg;
 				}
 			}
 		}
 
-	public function build (Breakdown $bk, $tabs) {
-
-		if($this->function != null){
+	public function build(Breakdown $bk, $tabs) {
+		if ($this->function != null) {
 			$this->function->build($bk, $tabs);
 		}
-		if($this->column != null){
-			$bk.append(" "+$this->column);
-		}
-		$doCommaValues = false;
 
-		if(count($this->values) > 1) {
-			bk.append(" (");
+		if ($this->column != null) {
+			$bk->append(" ".$this->column);
 		}
+
+		if (count($this->values) > 1) {
+			$bk->append(" (");
+		}
+
+		$doCommaValues = false;
 		foreach ($this->values as $val) {
 			if ($doCommaValues) {
 				$bk->append(",");
@@ -169,31 +128,35 @@ class Field implements ClauseBuild {
 			}
 			$val->build($bk, $tabs);
 		}
-		if(count($this->values) > 1) {
-			bk.append(" )");
+
+		if (count($this->values) > 1) {
+			$bk->append(" )");
 		}
 
-		if($this->fieldSQL != null) {
-			if($this->fieldSql->type != null){//Don't put parenthesis when it is not a complex query like SELECT,INSERT.
+		if ($this->fieldSql != null) {
+			if ($this->fieldSql->hasType()) {//Don't put parenthesis when it is not a complex query like SELECT,INSERT.
 				$bk->append(" (");//Non complex queries are just VALUES.. FUNCTIONS
 			}
-			$fieldSql->build($bk, $tabs);
-			if($this->fieldSql->type != null){
+
+			$this->fieldSql->build($bk, $tabs);
+
+			if ($this->fieldSql->hasType()) {
 				$bk->append(" )");
 			}
 		}
-		if($this->condition != null){
+
+		if ($this->condition != null) {
 			$this->condition->build($bk, $tabs);
 		}
-		if($this->columnAs != null){
-			$bk.append(" AS");
-			$bk.append(" ".$this->columnAs);
+
+		if ($this->columnAs != null) {
+			$bk->append(" AS");
+			$bk->append(" ".$this->columnAs);
 		}
 	}
 }
 
 class Functions implements ClauseBuild {
-
 	const MAX = "MAX";
 	const MIN = "MIN";
 	const COUNT = "COUNT";
@@ -201,49 +164,50 @@ class Functions implements ClauseBuild {
 	const AVG = "AVG";
 	const LOWER = "LOWER";
 	const UPPER = "UPPER";
+
 	protected $function;
-	protected $functionFields = [];
+	protected $functionFields;
 	protected $functionAs;
 
 
 	public function __construct(/* function, ...fields... */ ) {
 		$args = func_get_args();
-		$this->function = array_pop($args);
-		// TODO: just array_merge this
-		foreach ($args as $field) {
-			$this->functionFields[] = $field;
-		}
+		$this->function = array_shift($args);
+		$this->functionFields = $args;
 	}
 
-	public function build (Breakdown $bk, $tabs) {
+	public function build(Breakdown $bk, $tabs) {
 		$fieldFunctionOpenedParenthesis = false;
+
 		if ($this->function != null) {
 			$bk->append(" ". $this->function);
 			$bk->append(" (");
 			$fieldFunctionOpenedParenthesis = true;
 		}
+
 		$doCommaField = false;
-		foreach ($functionFields as $field) {
-			if($doCommaField) {
+		foreach ($this->functionFields as $field) {
+			if ($doCommaField) {
 				$bk->append(",");
 			} else {
 				$doCommaField = true;
 			}
 			$field->build($bk, $tabs);
 		}
+
 		if ($fieldFunctionOpenedParenthesis) {
 			$bk->append(" )");
 			$fieldFunctionOpenedParenthesis = false;
 		}
+
 		if ($this->functionAs != null) {
-			$bk->append(" AS " . $this->functionAs);
+			$bk->append(" AS ".$this->functionAs);
 		}
 	}
 
 }
 
 class Set implements ClauseBuild {
-
 	protected $column;
 	protected $value;
 
@@ -252,7 +216,7 @@ class Set implements ClauseBuild {
 		$this->value = $value;
 	}
 
-	public function build (Breakdown $bk, $tabs) {
+	public function build(Breakdown $bk, $tabs) {
 		$bk->append(" " . $this->column);
 		$bk->append(" =");
 		$bk->append(" ?");
@@ -261,89 +225,65 @@ class Set implements ClauseBuild {
 
 }
 
-/* not implemented
-class Cases implements ClauseBuild {
-
-	public function build (Breakdown $bk, $tabs) {
-
-	}
-
-}
-*/
-
 class From implements ClauseBuild {
-
 	protected $table;
 
 	public function __construct($table) {
 		$this->table = $table;
 	}
 
-	public function build (Breakdown $bk, $tabs) {
+	public function build(Breakdown $bk, $tabs) {
 		$bk->append(" FROM");
-		$bk->append(" " . $this->table);
+		$bk->append(" ".$this->table);
 	}
-
 }
 
 class Into implements ClauseBuild {
-
 	protected $table;
 
 	public function __construct($table) {
 		$this->table = $table;
 	}
 
-	public function build (Breakdown $bk, $tabs) {
+	public function build(Breakdown $bk, $tabs) {
 		$bk->append(Clause::line($tabs+1));
 		$bk->append(" INTO");
-		$bk->append(" " . $this->table);
-
+		$bk->append(" ".$this->table);
 	}
-
 }
 
 class Update implements ClauseBuild {
-
 	protected $table;
 
 	public function __construct($table) {
 		$this->table = $table;
 	}
 
-	public function build (Breakdown $bk, $tabs) {
-		$bk->append(" " . $this->table);
+	public function build(Breakdown $bk, $tabs) {
+		$bk->append(" ".$this->table);
 	}
 }
 
 class Values implements ClauseBuild {
-
-	protected $singleValue;
 	protected $sql;
 
 	public function __construct($sql) {
-		if ($sql instanceof SQL) {
-			$this->sql = $sql;
-		} else {
-			$this->singleValue = $sql;
-		}
+		$this->sql = $sql;
 	}
 
-	public function build (Breakdown $bk, $tabs) {
-		if ($this->singleValue != null) {
-			$bk->append(" ?");
-			$bk->addParameter($this->singleValue);
-		}
-		if ($this->sql != null) {
+	public function build(Breakdown $bk, $tabs) {
+		if ($this->sql instanceof SQL) {
 			$bk->append(" (");
 			$this->sql->build($bk, $tabs);
 			$bk->append(" )");
+		} else {
+			$bk->append(" ?");
+			$bk->addParameter($this->sql);
 		}
 	}
 }
 
 class Join implements ClauseBuild {
-
 	const INNER_JOIN = "INNER JOIN";
 	const LEFT_JOIN = "LEFT JOIN";
 	const LEFT_OUTER_JOIN = "LEFT OUTER JOIN";
@@ -353,30 +293,31 @@ class Join implements ClauseBuild {
 
 	protected $joinType;
 	protected $table;
-	protected $on = [];
-	protected $using  = [];
+	protected $on;
+	protected $using;
 
 	public function __construct($joinType, $table) {
 		$this->joinType = $joinType;
 		$this->table = $table;
+		$this->on = $this->using = [];
 	}
 
-	public function build (Breakdown $bk, $tabs) {
-		$bk->append(" " . $this->joinType);
-		$bk->append(" " . $this->table);
+	public function build(Breakdown $bk, $tabs) {
+		$bk->append(" ".$this->joinType);
+		$bk->append(" ".$this->table);
 		$this->buildUsing($bk, $tabs);
-		$this->buildOn($bk,$tabs);
+		$this->buildOn($bk, $tabs);
 	}
 
 	public function buildOn(Breakdown $bk, $tabs) {
 		$doOnJoinClause = true;
 		foreach ($this->on as $on) {
 			$bk->append(Clause::line($tabs+2));
-			if($doOnJoinClause) {
-				$bk.append(" ON");
+			if ($doOnJoinClause) {
+				$bk->append(" ON");
 				$doOnJoinClause = false;
 			} else {
-				$bk.append(" AND");
+				$bk->append(" AND");
 			}
 			$on->build($bk, $tabs);
 		}
@@ -410,9 +351,10 @@ class On implements ClauseBuild {
 		$this->column2 = $col2;
 	}
 
-	public function build (Breakdown $bk, $tabs) {
+	public function build(Breakdown $bk, $tabs) {
 		$bk->line($tabs+2);
 		$bk->append(" "+$this->column1);
+
 		if ($this->column2) {
 			$bk->append(" = ");
 			$bk->append(" "+$this->column2);
@@ -428,10 +370,9 @@ class Using implements ClauseBuild {
 		$this->column = $column;
 	}
 
-	public function build (Breakdown $bk, $tabs) {
+	public function build(Breakdown $bk, $tabs) {
 		$bk->append(" ".$this->column);
 	}
-
 }
 
 class Union implements ClauseBuild {
@@ -443,18 +384,16 @@ class Union implements ClauseBuild {
 		$this->sql = $sql;
 	}
 
-	public function build (Breakdown $bk, $tabs) {
+	public function build(Breakdown $bk, $tabs) {
 		$bk->append(" UNION");
 		if ($this->all) {
 			$bk->append(" ALL");
 		}
 		$this->sql->build($bk, $tabs);
 	}
-
 }
 
 class Intersect implements ClauseBuild {
-
 	protected $all;
 	protected $sql;
 
@@ -463,19 +402,17 @@ class Intersect implements ClauseBuild {
 		$this->sql = $sql;
 	}
 
-	public function build (Breakdown $bk, $tabs) {
+	public function build(Breakdown $bk, $tabs) {
 		$bk->append(" INTERSECT");
 		if ($this->all) {
 			$bk->append(" ALL");
 		}
 		$this->sql->build($bk, $tabs);
 	}
-
 }
 
 
 class Except implements ClauseBuild {
-
 	protected $all;
 	protected $sql;
 
@@ -484,53 +421,42 @@ class Except implements ClauseBuild {
 		$this->sql = $sql;
 	}
 
-	public function build (Breakdown $bk, $tabs) {
+	public function build(Breakdown $bk, $tabs) {
 		$bk->append(" EXCEPT");
 		if ($this->all) {
 			$bk->append(" ALL");
 		}
 		$this->sql->build($bk, $tabs);
 	}
-
 }
 
 class Limit implements ClauseBuild {
-
 	protected $limit;
 
 	public function __construct($limit) {
 		$this->limit = $limit;
 	}
 
-	public function build (Breakdown $bk, $tabs) {
+	public function build(Breakdown $bk, $tabs) {
 		$bk->append(" LIMIT");
-		$bk->append(" " . $this->limit);
+		$bk->append(" ".$this->limit);
 	}
-
 }
 
 class Offset implements ClauseBuild {
-
 	protected $offset;
 
 	public function __construct($offset) {
 		$this->offset = $offset;
 	}
 
-	public function build (Breakdown $bk, $tabs) {
+	public function build(Breakdown $bk, $tabs) {
 		$bk->append(" OFFSET");
-		$bk->append(" " . $this->offset);
+		$bk->append(" ".$this->offset);
 	}
-
 }
 
 class Condition implements ClauseBuild {
-
-	protected $connector;
-	protected $left;
-	protected $right;
-	protected $equality;
-
 	const LESS_THAN = "<";
 	const LESS_THAN_OR_EQUAL = "<=";
 	const EQUAL = "=";
@@ -550,92 +476,189 @@ class Condition implements ClauseBuild {
 	const AND_ = "AND";
 	const OR_ = "OR";
 
-	public function __construct($left, $operator, $right) {
-		$this->equality = $operator;
+	protected $connector;
+	protected $left;
+	protected $right;
+	protected $equality;
+
+	public function __construct($left=null, $operator=null, $right=null) {
+		if ($operator !== null) {
+			$this->equality = $operator;
+		}
 
 		if ($left instanceof Field || $left instanceof Functions) {
 			$this->left = $left;
-		} else {
+		} elseif ($left !== null) {
 			$this->left = new Field($left);
 		}
 
 		if ($right instanceof Field || $right instanceof Functions) {
 			$this->right = $right;
-		} else {
+		} elseif ($right !== null) {
 			$this->right = new Field(new Values($right));
 		}
 	}
 
-	public function build (Breakdown $bk, $tabs) {
+	public function build(Breakdown $bk, $tabs) {
 		if ($this->left != null) {
 			$this->left->build($bk, $tabs);
 		}
-		$bk->append(" " + $this->equality);
+
+		$bk->append(" ".$this->equality);
+
 		if ($this->right != null) {
 			$this->right->build($bk, $tabs);
 		}
 	}
 
+	public function connector($type=null) {
+		if ($type !== null) {
+			$this->connector = $type;
+		}
+
+		return $this->connector;
+	}
 }
 
 class Where implements ClauseBuild {
+	protected $conditions;
 
-	protected $conditions = [];
-
-	public function add($condition) {
-		$this->conditions []= $condition;
+	public function __construct() {
+		$this->conditions = [];
 	}
 
-	/*
-	public function where_and($condition)
+	public function add(Condition $condition) {
+		$this->conditions[] = $condition;
+	}
 
-		public void and(String $column1){
-			Condition condition = new Condition();
-			condition.connector = Condition.AND;
-			condition.field1 = new Field(column1);
-			add(condition);
+	public function and_($condition) {
+		if (!($condition instanceof Condition)) {
+			$condition = new Condition($condition);
 		}
 
-		public void and(Condition $condition){
-			condition.connector = Condition.AND;
-			add(condition);
+		$condition->connector(Condition::AND_);
+		$this->add($condition);
+	}
+
+	public function or_($condition) {
+		if (!($condition instanceof Condition)) {
+			$condition = new Condition($condition);
 		}
-		public void or(Condition $condition){
-			condition.connector = Condition.OR;
-			add(condition);
-		}
-	*/
+
+		$condition->connector(Condition::OR_);
+		$this->add($condition);
+	}
 
 	public function build (Breakdown $bk, $tabs) {
+		$doWhere = true;
+		/** @var Condition $condition */
+		foreach ($this->conditions as $condition) {
+			if ($doWhere) {
+				$bk->line($tabs + 1);
+				$bk->append(" WHERE");
+				$doWhere = false;
+			} else {
+				$bk->line($tabs + 1);
+				$bk->append(" ".$condition->connector());
+			}
 
+			$condition->build($bk, $tabs);
+		}
 	}
-
 }
 
 class In implements ClauseBuild {
+	/**
+	 * @var SQL|array
+	 */
+	protected $values;
 
-	public function build (Breakdown $bk, $tabs) {
+	/**
+	 * @var bool
+	 */
+	protected $in;
 
+	public function __construct($values, $in=true) {
+		$this->values = $values;
+		$this->in = $in;
 	}
 
+	public function build(Breakdown $bk, $tabs) {
+		if (!$this->in) {
+			$bk->append(" NOT");
+		}
+
+		$bk->append(" IN");
+		$bk->append(" (");
+
+		if ($this->values instanceof SQL) {
+			$this->values->build($bk, $tabs);
+		} else {
+			$bk->append(explode(',', $this->values));
+		}
+
+		$bk->append(" )");
+	}
 }
 
 class OrderBy implements ClauseBuild {
+	protected $column;
+	protected $asc;
 
-	public function build (Breakdown $bk, $tabs) {
-
+	public function __construct($column, $asc=true) {
+		$this->column = $column;
+		$this->asc = $asc;
 	}
 
+	public function build(Breakdown $bk, $tabs) {
+		$bk->append(" ".$this->column);
+
+		if (!$this->asc) {
+			$bk->append(" DESC");
+		}
+	}
 }
 
 class GroupBy implements ClauseBuild {
+	protected $sql;
 
-	public function build (Breakdown $bk, $tabs) {
-
+	public function __construct($sql) {
+		$this->sql = $sql;
 	}
 
+	public function build(Breakdown $bk, $tabs) {
+		if ($this->sql instanceof SQL) {
+			(new Field($this->sql))->build($bk, $tabs);
+		} else {
+			$bk->append(" ".$this->sql);
+		}
+	}
 }
 
+class Having implements ClauseBuild {
+	protected $conditions;
+
+	public function __construct(Condition $condition) {
+		$this->conditions = [$condition];
+	}
+
+	public function build(Breakdown $bk, $tabs) {
+		$doHaving = true;
+		/** @var Condition $condition */
+		foreach ($this->conditions as $condition) {
+			if ($doHaving) {
+				$bk->line($tabs);
+				$bk->append(" HAVING");
+				$doHaving = false;
+			}
+
+			$condition->build($bk, $tabs);
+		}
+	}
+}
+
+/*
+unimplemented
 class Window implements ClauseBuild {
 
 	public function build (Breakdown $bk, $tabs) {
@@ -652,10 +675,18 @@ class Returning implements ClauseBuild {
 
 }
 
-class Clause {
+class Cases implements ClauseBuild {
 
+	public function build (Breakdown $bk, $tabs) {
+
+	}
+
+}
+*/
+
+class Clause {
 	public static function line($tabs) {
-		return "\n"+Clause::tabs($tabs);
+		return "\n".Clause::tabs($tabs);
 	}
 
 	public static function tabs($tabs) {

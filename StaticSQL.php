@@ -3,7 +3,6 @@
 require_once("SQL.php");
 
 class StaticSQL {
-
 	static $singleton;
 
 	public function SQL() {

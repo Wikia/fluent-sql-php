@@ -41,6 +41,10 @@ class SQL {
 		return $this;
 	}
 
+	public function hasType() {
+		return $this->type != null;
+	}
+
 	public function getType(){
 		return $this->type->type;
 	}
