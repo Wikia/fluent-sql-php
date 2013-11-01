@@ -9,6 +9,8 @@
 .DS_Store
 Thumbs.db
 .buildpath
+*.sublime-project
+*.sublime-workspace
 sftp-config.json
 psy.cfg
 *.iml
