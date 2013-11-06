@@ -250,6 +250,10 @@ class SQL {
 		if ($column2 !== null) {
 			return $this->ON($column1, $column2);
 		} else {
+			if ($this->where == null) {
+				return $this->WHERE($column1);
+			}
+
 			$condition = new Condition($column1);
 			$this->where->and_($condition);
 
@@ -341,6 +345,10 @@ class SQL {
 	}
 
 	public function OR_($column) {
+		if ($this->where == null) {
+			return $this->WHERE($column);
+		}
+
 		$condition = new Condition($column);
 		$this->where->or_($condition);
 
