@@ -26,6 +26,10 @@ class Type implements ClauseBuild {
 		$bk->tabs($tabs);
 		$bk->append(" ".$this->type);
 	}
+
+	public function type() {
+		return $this->type;
+	}
 }
 
 class With implements ClauseBuild {
@@ -52,6 +56,10 @@ class With implements ClauseBuild {
 			$bk->append(Clause::line(0));
 		}
 	}
+
+	public function recursive() {
+		return $this->recursive;
+	}
 }
 
 // Strict "Java" style is a lot more verbose, really
@@ -76,35 +84,37 @@ class DistinctOn extends Distinct {
 }
 
 class Field implements ClauseBuild {
-		protected $column;
-		protected $fieldSql;
-		protected $function;
-		protected $columnAs;
-		protected $values;
-		protected $condition; //Condition can also be in field
+	protected $column;
 
-		public function __construct( /*...*/ ) {
-			$argc = func_num_args();
-			$argv = func_get_args();
+	/** @var SQL */
+	protected $fieldSql;
+	protected $function;
+	protected $columnAs;
+	protected $values;
+	protected $condition; //Condition can also be in field
 
-			$this->values = [];
-			if ($argc > 1) {
-				foreach ($argv as $val) {
-					$this->values[] = new Values($val);
-				}
-			} else {
-				$arg = $argv[0];
-				if ($arg instanceof Functions) {
-					$this->function = $arg;
-				} elseif ($arg instanceof Condition) {
-					$this->condition = $arg;
-				} elseif ($arg instanceof SQL) {
-					$this->fieldSql = $arg;
-				} else { // is_string
-					$this->column = $arg;
-				}
+	public function __construct( /*...*/ ) {
+		$argc = func_num_args();
+		$argv = func_get_args();
+
+		$this->values = [];
+		if ($argc > 1) {
+			foreach ($argv as $val) {
+				$this->values []= new Values($val);
+			}
+		} else {
+			$arg = $argv[0];
+			if ($arg instanceof Functions) {
+				$this->function = $arg;
+			} elseif ($arg instanceof Condition) {
+				$this->condition = $arg;
+			} elseif ($arg instanceof SQL) {
+				$this->fieldSql = $arg;
+			} else { // is_string
+				$this->column = $arg;
 			}
 		}
+	}
 
 	public function build(Breakdown $bk, $tabs) {
 		if ($this->function != null) {
@@ -121,6 +131,7 @@ class Field implements ClauseBuild {
 
 		$doCommaValues = false;
 		foreach ($this->values as $val) {
+			/** @var Values $val */
 			if ($doCommaValues) {
 				$bk->append(",");
 			} else {
@@ -153,6 +164,14 @@ class Field implements ClauseBuild {
 			$bk->append(" AS");
 			$bk->append(" ".$this->columnAs);
 		}
+	}
+
+	public function columnAs($value=null) {
+		if ($value !== null) {
+			$this->columnAs = $value;
+		}
+
+		return $this->columnAs;
 	}
 }
 
@@ -205,6 +224,13 @@ class Functions implements ClauseBuild {
 		}
 	}
 
+	public function functionAs($functionAs=null) {
+		if ($functionAs !== null) {
+			$this->functionAs = $functionAs;
+		}
+
+		return $this->functionAs;
+	}
 }
 
 class Set implements ClauseBuild {
@@ -339,6 +365,14 @@ class Join implements ClauseBuild {
 			}
 			$using->build($bk, $tabs);
 		}
+	}
+
+	public function addOn($on) {
+		$this->on []= $on;
+	}
+
+	public function addUsing($using) {
+		$this->using []= $using;
 	}
 }
 
@@ -518,6 +552,30 @@ class Condition implements ClauseBuild {
 
 		return $this->connector;
 	}
+
+	public function left($left=null) {
+		if ($left != null) {
+			$this->left = $left;
+		}
+
+		return $this->left;
+	}
+
+	public function equality($equality=null) {
+		if ($equality != null) {
+			$this->equality = $equality;
+		}
+
+		return $this->equality;
+	}
+
+	public function right($right=null) {
+		if ($right != null) {
+			$this->right = $right;
+		}
+
+		return $this->right;
+	}
 }
 
 class Where implements ClauseBuild {
@@ -528,7 +586,7 @@ class Where implements ClauseBuild {
 	}
 
 	public function add(Condition $condition) {
-		$this->conditions[] = $condition;
+		$this->conditions []= $condition;
 	}
 
 	public function and_($condition) {
@@ -549,7 +607,7 @@ class Where implements ClauseBuild {
 		$this->add($condition);
 	}
 
-	public function build (Breakdown $bk, $tabs) {
+	public function build(Breakdown $bk, $tabs) {
 		$doWhere = true;
 		/** @var Condition $condition */
 		foreach ($this->conditions as $condition) {
@@ -564,6 +622,14 @@ class Where implements ClauseBuild {
 
 			$condition->build($bk, $tabs);
 		}
+	}
+
+	public function conditions($condition=null) {
+		if ($condition != null) {
+			$this->conditions []= $condition;
+		}
+
+		return $this->conditions;
 	}
 }
 
@@ -617,6 +683,14 @@ class OrderBy implements ClauseBuild {
 			$bk->append(" DESC");
 		}
 	}
+
+	public function asc($asc=null) {
+		if ($asc !== null) {
+			$this->asc = $asc;
+		}
+
+		return $this->asc;
+	}
 }
 
 class GroupBy implements ClauseBuild {
@@ -654,6 +728,14 @@ class Having implements ClauseBuild {
 
 			$condition->build($bk, $tabs);
 		}
+	}
+
+	public function conditions($condition=null) {
+		if ($condition != null) {
+			$this->conditions []= $condition;
+		}
+
+		return $this->conditions;
 	}
 }
 
