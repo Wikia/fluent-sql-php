@@ -1,7 +1,4 @@
 <?php
-
-require_once("SQL.php");
-
 class StaticSQL {
 	static $singleton;
 
@@ -20,6 +17,9 @@ class StaticSQL {
 		return (new SQL())->WITH_RECURSIVE($name, $sql);
 	}
 
+	/**
+	 * @return SQL
+	 */
 	public static function SELECT(/*...*/){
 		$sql = new SQL();
 		return call_user_func_array([$sql, 'SELECT'], func_get_args());

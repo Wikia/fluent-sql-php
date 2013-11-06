@@ -121,7 +121,7 @@ class Field implements ClauseBuild {
 			$this->function->build($bk, $tabs);
 		}
 
-		if ($this->column != null) {
+		if ($this->column !== null) {
 			$bk->append(" ".$this->column);
 		}
 
@@ -353,6 +353,7 @@ class Join implements ClauseBuild {
 		$doUsingClause = true;
 		$doCommaUsing = false;
 		foreach ($this->using as $using) {
+			/** @var Using $using */
 			if ($doUsingClause) {
 				$bk->append(Clause::line($tabs+2));
 				$bk->append(" USING");
@@ -387,11 +388,11 @@ class On implements ClauseBuild {
 
 	public function build(Breakdown $bk, $tabs) {
 		$bk->line($tabs+2);
-		$bk->append(" "+$this->column1);
+		$bk->append(" ".$this->column1);
 
 		if ($this->column2) {
 			$bk->append(" = ");
-			$bk->append(" "+$this->column2);
+			$bk->append(" ".$this->column2);
 		}
 	}
 
@@ -400,7 +401,7 @@ class On implements ClauseBuild {
 class Using implements ClauseBuild {
 	protected $column;
 
-	public function __constrcut($column) {
+	public function __construct($column) {
 		$this->column = $column;
 	}
 
@@ -554,7 +555,7 @@ class Condition implements ClauseBuild {
 	}
 
 	public function left($left=null) {
-		if ($left != null) {
+		if ($left !== null) {
 			$this->left = $left;
 		}
 
@@ -562,7 +563,7 @@ class Condition implements ClauseBuild {
 	}
 
 	public function equality($equality=null) {
-		if ($equality != null) {
+		if ($equality !== null) {
 			$this->equality = $equality;
 		}
 
@@ -570,7 +571,7 @@ class Condition implements ClauseBuild {
 	}
 
 	public function right($right=null) {
-		if ($right != null) {
+		if ($right !== null) {
 			$this->right = $right;
 		}
 

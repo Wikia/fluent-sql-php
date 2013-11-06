@@ -1,7 +1,4 @@
 <?php
-
-include_once("Clause.php");
-
 class SQL {
 	protected $callOrder = [];
 	protected $withQueries = [];
@@ -52,7 +49,7 @@ class SQL {
 	protected $offset;
 
 	private function called($call) {
-		$callOrder []= $call;
+		$this->callOrder []= $call;
 
 		return $this;
 	}
@@ -83,6 +80,9 @@ class SQL {
 		return $this->SELECT("*");
 	}
 
+	/**
+	 * @return SQL
+	 */
 	public function SELECT() {
 		$this->type = new Type(Type::SELECT);
 		$this->called($this->type);
@@ -190,11 +190,11 @@ class SQL {
 	}
 
 	public function LEFT_JOIN($table) {
-		return $this->JOIN(Join::LEFT_JOIN, $table);
+		return $this->JOIN($table, Join::LEFT_JOIN);
 	}
 
 	public function RIGHT_JOIN($table) {
-		return $this->JOIN(Join::RIGHT_JOIN, $table);
+		return $this->JOIN($table, Join::RIGHT_JOIN);
 	}
 
 	public function INNER_JOIN($table) {
@@ -425,6 +425,9 @@ class SQL {
 		return null;
 	}
 
+	/**
+	 * @return SQL
+	 */
 	public function GROUP_BY(/** args */) {
 		foreach (func_get_args() as $arg) {
 			$group = new GroupBy($arg);
@@ -455,9 +458,11 @@ class SQL {
 		return $this->called($offset);
 	}
 
-	public function build() {
-		$bk = new Breakdown();
-		$tabs = 0;
+	public function build($bk=null, $tabs=0) {
+		if ($bk === null) {
+			$bk = new Breakdown();
+		}
+
 		$this->doCommaField = false;
 
 		$this->buildClauseAllCTEs($bk, $tabs);
@@ -481,6 +486,8 @@ class SQL {
 		$this->buildClauseAllOrderBy($bk, $tabs);
 		$this->buildClauseLimit($bk, $tabs);
 		$this->buildClauseOffset($bk, $tabs);
+
+		return $bk;
 	}
 
 	private function buildClauseAllCTEs(Breakdown $bk, $tabs) {
@@ -654,6 +661,7 @@ class SQL {
 		foreach ($this->intersect as $intersect) {
 			/** @var Intersect $intersect */
 			$bk->line($tabs);
+			$bk->line($tabs);
 			$intersect->build($bk, $tabs);
 			$bk->line($tabs);
 		}
@@ -758,13 +766,13 @@ class SQL {
 
 		if ($condition instanceof Condition) {
 			$condition->equality($conditionType);
-			$condition->right(new Field($args));
+			$condition->right(self::instanceHelper('Field', $args));
 
 			return $this->called($condition);
 		} else {
 			$condition = new Condition();
 			$condition->equality($conditionType);
-			$condition->right(new Field($args));
+			$condition->right(self::instanceHelper('Field', $args));
 
 			$field = new Field($condition);
 			$this->fields []= $field;
@@ -782,7 +790,7 @@ class SQL {
 
 		$condition->equality($op);
 
-		if ($value != null) {
+		if ($value !== null) {
 			$condition->right(new Field($value));
 		}
 
@@ -836,6 +844,11 @@ class SQL {
 		}
 
 		return null;
+	}
+
+	private static function instanceHelper($type, $args) {
+		$reflection = new ReflectionClass($type);
+		return $reflection->newInstanceArgs($args);
 	}
 }
 

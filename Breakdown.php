@@ -1,5 +1,4 @@
 <?php
-
 class Breakdown {
 	private $sql;
 	private $parameters;
