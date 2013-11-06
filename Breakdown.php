@@ -32,4 +32,8 @@ class Breakdown {
 	public function getParameters() {
 		return $this->parameters;
 	}
+
+	public function __toString() {
+		return $this->getSql();
+	}
 }

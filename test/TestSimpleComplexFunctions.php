@@ -2,9 +2,10 @@
 include_once(__DIR__."/../init.php");
 
 function test() {
-	$expected = "SELECT * FROM products WHERE price IS NOT NULL";
-	$actual = (new SQL())->SELECT_ALL()->FROM("products")->WHERE("price")->IS_NOT_NULL()->build()->getSql();
-	echo $actual;
+	$expected = __sanitize("SELECT * FROM products WHERE price IS NOT NULL");
+	$actual = __sanitize((new SQL())->SELECT_ALL()->FROM("products")->WHERE("price")->IS_NOT_NULL()->build());
+
+	var_dump($expected == $actual);
 }
 
 function test2() {
@@ -15,7 +16,7 @@ function test2() {
 		"				CustomerName " .
 		"			FROM dbo.Orders" .
 		"			RIGHT JOIN Customers" .
-		"				on Orders.Customer_ID = Customers.ID " .
+		"				ON Orders.Customer_ID = Customers.ID " .
 		"			LEFT JOIN Persons" .
 		"				ON Persons.name = Customer.name" .
 		"				AND Persons.lastName = Customer.lastName" .
@@ -33,7 +34,7 @@ function test2() {
 		" INNER JOIN dbo.Orders ".
 		"        USING ID" .
 		" WHERE ".
-		"	Orders.n_items > ? ".
+		"	Orders.n_items > 0 ".
 		"   AND Orders.ID IN ( SELECT ID FROM LatestOrders )" ;
 
 	$actual =
@@ -43,7 +44,7 @@ function test2() {
 				->COUNT(StaticSQL::MAX("n_items"))
 				->FROM("dbo.Orders")
 				->RIGHT_JOIN("Customers")
-					->ON("Orders.customer_ID", "Customers.ID")
+					->ON("Orders.Customer_ID", "Customers.ID")
 				->LEFT_JOIN("Persons")
 					->ON("Persons.name", "Customer.name")
 					->AND_("Persons.lastName", "Customer.lastName")
@@ -67,8 +68,15 @@ function test2() {
 			->AND_("Orders.ID")->IN(StaticSQL::SELECT("ID")->FROM("LatestOrders"))
 		->build();
 
-	echo $actual->getSql();
+	$expected = __sanitize($expected);
+	$actual = __sanitize($actual);
+
+	var_dump($expected == $actual);
 }
 
-//test();
+function __sanitize($string) {
+	return trim(preg_replace('/\s+/', ' ', $string))	;
+}
+
+test();
 test2();
