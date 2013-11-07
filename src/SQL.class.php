@@ -857,7 +857,12 @@ class SQL {
 	}
 
 	private static function instanceHelper($type, $args) {
-		$reflection = new \ReflectionClass("FluentSql\\{$type}");
-		return $reflection->newInstanceArgs($args);
+		static $reflections = [];
+
+		if (!array_key_exists($type, $reflections)) {
+			$reflections[$type] = new \ReflectionClass("FluentSql\\{$type}");
+		}
+
+		return $reflections[$type]->newInstanceArgs($args);
 	}
 }
