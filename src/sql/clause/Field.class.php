@@ -105,4 +105,8 @@ class Field implements ClauseBuild {
 
 		return $this->columnAs;
 	}
+
+	public function numValues() {
+		return count($this->values);
+	}
 }

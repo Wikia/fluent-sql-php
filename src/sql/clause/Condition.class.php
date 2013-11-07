@@ -58,6 +58,12 @@ class Condition implements ClauseBuild {
 			$this->left->build($bk, $tabs);
 		}
 
+		if ($this->equality == Condition::IN && $this->right instanceof Field && $this->right->numValues() == 1) {
+			$this->equality(Condition::EQUAL);
+		} elseif ($this->equality == Condition::NOT_IN && $this->right instanceof Field && $this->right->numValues() == 1) {
+			$this->equality(Condition::NOT_EQUAL);
+		}
+
 		$bk->append(" ".$this->equality);
 
 		if ($this->right != null) {

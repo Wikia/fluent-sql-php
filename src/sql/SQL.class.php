@@ -823,6 +823,10 @@ class SQL {
 		$condition = $this->getLastCall();
 
 		if (count($args) > 1 || !($args[0] instanceof SQL)) {
+			if (is_array($args[0])) {
+				$args = $args[0];
+			}
+
 			foreach ($args as $i => $arg) {
 				$args[$i] = new Values($arg);
 			}
