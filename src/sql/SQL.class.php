@@ -50,6 +50,12 @@ class SQL {
 	/** @var Offset */
 	protected $offset;
 
+	/** @var Cache */
+	protected $cacheTtl = 0;
+
+	/** @var Database */
+	protected $db;
+
 	private function called($call) {
 		$this->callOrder []= $call;
 
@@ -468,6 +474,30 @@ class SQL {
 		return $this->called($offset);
 	}
 
+	public function cache($ttl) {
+		$this->cacheTtl = $ttl;
+	}
+
+	public function run($db, callable $callback, $key=null) {
+		$breakDown = $this->build();
+		$cache = $this->getCache();
+		$result = null;
+
+		if ($this->cacheEnabled()) {
+			$result = $cache->get($breakDown, $key);
+		}
+
+		if (!$result) {
+			$result = $this->query($db, $breakDown->getSql(), $callback);
+
+			if ($this->cacheEnabled()) {
+				$cache->set($breakDown, $result, $this->cacheTtl, $key);
+			}
+		}
+
+		return $result;
+	}
+
 	public function build($bk=null, $tabs=0) {
 		if ($bk === null) {
 			$bk = new Breakdown();
@@ -864,5 +894,24 @@ class SQL {
 		}
 
 		return $reflections[$type]->newInstanceArgs($args);
+	}
+
+	protected function cacheEnabled() {
+		return $this->cacheTtl > 0;
+	}
+
+	protected function getCache() {
+		return new ProcessCache();
+	}
+
+	/**
+	 * assumes $db has a method named "query", like mysqli
+	 *
+	 * @param $db
+	 * @param $sql
+	 * @param callable $callback
+	 */
+	protected function query($db, $sql, callable $callback) {
+		return $callback($db->query($sql));
 	}
 }

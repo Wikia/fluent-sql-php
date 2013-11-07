@@ -31,3 +31,7 @@ require_once( __DIR__ . '/sql/clause/Using.class.php' );
 require_once( __DIR__ . '/sql/clause/Values.class.php' );
 require_once( __DIR__ . '/sql/clause/Where.class.php' );
 require_once( __DIR__ . '/sql/clause/With.class.php' );
+
+// cache
+require_once(__DIR__.'/cache/Cache.class.php');
+require_once(__DIR__.'/cache/ProcessCache.class.php');
