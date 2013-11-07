@@ -151,6 +151,10 @@ class SQL {
 		return $this;
 	}
 
+	/**
+	 * @param $sql
+	 * @return SQL
+	 */
 	public function SUM($sql) {
 		return $this->function_(Functions::SUM, new Field($sql));
 	}
