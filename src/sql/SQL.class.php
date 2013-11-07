@@ -367,6 +367,10 @@ class SQL {
 		return $this->whereOp($value, Condition::EQUAL);
 	}
 
+	public function EQUAL_TO_FIELD($value) {
+		return $this->whereOp($value, Condition::EQUAL, false);
+	}
+
 	public function GREATER_THAN($value) {
 		return $this->whereOp($value, Condition::GREATER_THAN);
 	}
@@ -387,6 +391,10 @@ class SQL {
 		return $this->whereOp($value, Condition::NOT_EQUAL);
 	}
 
+	public function NOT_EQUAL_TO_FIELD($value) {
+		return $this->whereOp($value, Condition::NOT_EQUAL, false);
+	}
+
 	public function IS_NOT_NULL() {
 		return $this->whereOp(null, Condition::IS_NOT_NULL);
 	}
@@ -397,7 +405,7 @@ class SQL {
 
 	public function BETWEEN($value1, $value2) {
 		$this->whereOp($value1, Condition::BETWEEN);
-		$this->AND_($value2);
+		$this->AND_(new Values($value2));
 		array_pop($this->callOrder);
 
 		return $this;
@@ -498,7 +506,7 @@ class SQL {
 		}
 
 		if ($result === false) {
-			$result = $this->query($db, $breakDown->getSql(), $callback);
+			$result = $this->query($db, $breakDown, $callback);
 
 			if ($this->cacheEnabled()) {
 				$cache->set($breakDown, $result, $this->cacheTtl, $key);
@@ -814,6 +822,12 @@ class SQL {
 	private function inHelper($args, $conditionType) {
 		$condition = $this->getLastCall();
 
+		if (count($args) > 1 || !($args[0] instanceof SQL)) {
+			foreach ($args as $i => $arg) {
+				$args[$i] = new Values($arg);
+			}
+		}
+
 		if ($condition instanceof Condition) {
 			$condition->equality($conditionType);
 			$condition->right(self::instanceHelper('Field', $args));
@@ -831,7 +845,7 @@ class SQL {
 		}
 	}
 
-	private function whereOp($value, $op) {
+	private function whereOp($value, $op, $convertToValue=true) {
 		$condition = $this->getLastCondition();
 
 		if ($condition == null) {
@@ -841,6 +855,10 @@ class SQL {
 		$condition->equality($op);
 
 		if ($value !== null) {
+			if ($convertToValue) {
+				$value = new Values($value);
+			}
+
 			$condition->right(new Field($value));
 		}
 
@@ -918,14 +936,24 @@ class SQL {
 	 * assumes $db has a method named "query", like mysqli
 	 *
 	 * @param $db
-	 * @param $sql
+	 * @param BreakDown $breakDown
 	 * @param callable $callback
+	 * @throws \InvalidArgumentException
 	 */
-	protected function query($db, $sql, callable $callback) {
+	protected function query($db, Breakdown $breakDown, callable $callback) {
 		if (!method_exists($db, 'query')) {
 			throw new \InvalidArgumentException;
 		}
 
+		$sql = $this->injectParams($db, $breakDown->getSql(), $breakDown->getParameters());
 		return $callback($db, $db->query($sql));
+	}
+
+	protected function injectParams($db, $preparedSql, $params) {
+		foreach ($params as $p) {
+			$preparedSql = preg_replace('/\?/', "'".addslashes($p)."'", $preparedSql, 1);
+		}
+
+		return $preparedSql;
 	}
 }

@@ -26,11 +26,17 @@ class Field implements ClauseBuild {
 		$this->values = [];
 		if ($argc > 1) {
 			foreach ($argv as $val) {
-				$this->values []= new Values($val);
+				if (!($val instanceof Values)) {
+					$val = new Values($val);
+				}
+
+				$this->values []= $val;
 			}
-		} else {
+		} elseif ($argc == 1) {
 			$arg = $argv[0];
-			if ($arg instanceof Functions) {
+			if ($arg instanceof Values) {
+				$this->values []= $arg;
+			} elseif ($arg instanceof Functions) {
 				$this->function = $arg;
 			} elseif ($arg instanceof Condition) {
 				$this->condition = $arg;

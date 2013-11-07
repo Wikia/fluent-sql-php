@@ -36,7 +36,8 @@ function test2() {
 		" INNER JOIN dbo.Orders ".
 		"        USING ID" .
 		" WHERE ".
-		"	Orders.n_items > 0 ".
+		"	Orders.n_items > ? ".
+		"			AND CustomerID IN ( ?, ?, ?, ?, ? )".
 		"   AND Orders.ID IN ( SELECT ID FROM LatestOrders )" ;
 
 	$actual =
@@ -60,14 +61,15 @@ function test2() {
 							->WHERE("OrderID")->IN(
 								StaticSQL::SELECT("ID")
 								->FROM("dbo.Orders")
-								->WHERE("CustomerID")->EQUAL_TO("Customers.ID"))
-
+								->WHERE("CustomerID")->EQUAL_TO_FIELD("Customers.ID")
+							)
 						)->AS_("TotalItemsPurchased")
 			->FROM("dbo.Customers")
 			->INNER_JOIN("dbo.Orders")
 				->USING("ID")
 			->WHERE("Orders.n_items")->GREATER_THAN(0)
-			->AND_("Orders.ID")->IN(StaticSQL::SELECT("ID")->FROM("LatestOrders"))
+				->AND_('CustomerID')->IN(1, 2, 3, 4, 5)
+				->AND_("Orders.ID")->IN(StaticSQL::SELECT("ID")->FROM("LatestOrders"))
 		->build();
 
 	$expected = __sanitize($expected);
