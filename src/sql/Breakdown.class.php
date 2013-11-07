@@ -12,7 +12,7 @@ class Breakdown {
 	}
 
 	public function getSql(){
-		return $this->sql;
+		return trim($this->sql);
 	}
 
 	public function append($str){

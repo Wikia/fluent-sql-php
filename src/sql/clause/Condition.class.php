@@ -20,6 +20,7 @@ class Condition implements ClauseBuild {
 	const NOT_IN = "NOT IN";
 	const EXISTS = "EXISTS";
 	const NOT_EXISTS = "NOT EXISTS";
+	const BETWEEN = 'BETWEEN';
 
 	const LIKE = "LIKE";
 	const NULL = "NULL";

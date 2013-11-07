@@ -395,6 +395,14 @@ class SQL {
 		return $this->whereOp(null, Condition::IS_NULL);
 	}
 
+	public function BETWEEN($value1, $value2) {
+		$this->whereOp($value1, Condition::BETWEEN);
+		$this->AND_($value2);
+		array_pop($this->callOrder);
+
+		return $this;
+	}
+
 	public function IN(/** args */) {
 		return $this->inHelper(func_get_args(), Condition::IN);
 	}
@@ -476,6 +484,8 @@ class SQL {
 
 	public function cache($ttl) {
 		$this->cacheTtl = $ttl;
+
+		return $this;
 	}
 
 	public function run($db, callable $callback, $key=null) {
@@ -487,7 +497,7 @@ class SQL {
 			$result = $cache->get($breakDown, $key);
 		}
 
-		if (!$result) {
+		if ($result === false) {
 			$result = $this->query($db, $breakDown->getSql(), $callback);
 
 			if ($this->cacheEnabled()) {
@@ -912,6 +922,10 @@ class SQL {
 	 * @param callable $callback
 	 */
 	protected function query($db, $sql, callable $callback) {
-		return $callback($db->query($sql));
+		if (!method_exists($db, 'query')) {
+			throw new \InvalidArgumentException;
+		}
+
+		return $callback($db, $db->query($sql));
 	}
 }

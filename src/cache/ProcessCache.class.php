@@ -32,5 +32,6 @@ class ProcessCache extends Cache {
 		}
 
 		self::$cache[$key] = $value;
+		return true;
 	}
 }
