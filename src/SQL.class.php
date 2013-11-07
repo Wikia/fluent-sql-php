@@ -1,4 +1,6 @@
 <?php
+namespace FluentSql;
+
 class SQL {
 	protected $callOrder = [];
 	protected $withQueries = [];
@@ -855,10 +857,7 @@ class SQL {
 	}
 
 	private static function instanceHelper($type, $args) {
-		$reflection = new ReflectionClass($type);
+		$reflection = new \ReflectionClass("FluentSql\\{$type}");
 		return $reflection->newInstanceArgs($args);
 	}
 }
-
-$w = new SQL();
-$s = (new SQL())->WITH("foo", $w);

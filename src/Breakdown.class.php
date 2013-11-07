@@ -1,4 +1,6 @@
 <?php
+namespace FluentSql;
+
 class Breakdown {
 	private $sql;
 	private $parameters;

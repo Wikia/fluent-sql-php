@@ -1,4 +1,6 @@
 <?php
+namespace FluentSql;
+
 class StaticSQL {
 	static $singleton;
 

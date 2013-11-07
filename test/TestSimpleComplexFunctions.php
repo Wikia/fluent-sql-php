@@ -1,5 +1,7 @@
 <?php
-include_once(__DIR__."/../init.php");
+namespace FluentSql;
+
+require_once(__DIR__.'/../src/init.php');
 
 function test() {
 	$expected = __sanitize("SELECT * FROM products WHERE price IS NOT NULL");
