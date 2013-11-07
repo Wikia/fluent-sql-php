@@ -2,7 +2,7 @@
 namespace FluentSql;
 
 class StaticSQL {
-	private static $class = 'SQL';
+	private static $class = "FluentSql\\SQL";
 
 	/**
 	 * @return SQL
