@@ -17,7 +17,7 @@ function test2() {
 		"				COUNT ( MAX ( n_items ) ), " .
 		"				CustomerName " .
 		"			FROM dbo.Orders" .
-		"			RIGHT JOIN Customers" .
+		"			RIGHT JOIN Customers AS c" .
 		"				ON Orders.Customer_ID = Customers.ID " .
 		"			LEFT JOIN Persons" .
 		"				ON Persons.name = Customer.name" .
@@ -46,7 +46,7 @@ function test2() {
 				->SUM(StaticSQL::COUNT("ID"))
 				->COUNT(StaticSQL::MAX("n_items"))
 				->FROM("dbo.Orders")
-				->RIGHT_JOIN("Customers")
+				->RIGHT_JOIN("Customers")->AS_('c')
 					->ON("Orders.Customer_ID", "Customers.ID")
 				->LEFT_JOIN("Persons")
 					->ON("Persons.name", "Customer.name")

@@ -10,12 +10,13 @@
 namespace FluentSql;
 
 class Field implements ClauseBuild {
+	use AsAble;
+
 	protected $column;
 
 	/** @var SQL */
 	protected $fieldSql;
 	protected $function;
-	protected $columnAs;
 	protected $values;
 	protected $condition; //Condition can also be in field
 
@@ -92,18 +93,7 @@ class Field implements ClauseBuild {
 			$this->condition->build($bk, $tabs);
 		}
 
-		if ($this->columnAs != null) {
-			$bk->append(" AS");
-			$bk->append(" ".$this->columnAs);
-		}
-	}
-
-	public function columnAs($value=null) {
-		if ($value !== null) {
-			$this->columnAs = $value;
-		}
-
-		return $this->columnAs;
+		$bk->appendAs($this->as_());
 	}
 
 	public function numValues() {

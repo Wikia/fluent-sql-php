@@ -10,6 +10,8 @@
 namespace FluentSql;
 
 class Functions implements ClauseBuild {
+	use AsAble;
+
 	const MAX = "MAX";
 	const MIN = "MIN";
 	const COUNT = "COUNT";
@@ -20,8 +22,6 @@ class Functions implements ClauseBuild {
 
 	protected $function;
 	protected $functionFields;
-	protected $functionAs;
-
 
 	public function __construct(/* function, ...fields... */ ) {
 		$args = func_get_args();
@@ -53,16 +53,6 @@ class Functions implements ClauseBuild {
 			$fieldFunctionOpenedParenthesis = false;
 		}
 
-		if ($this->functionAs != null) {
-			$bk->append(" AS ".$this->functionAs);
-		}
-	}
-
-	public function functionAs($functionAs=null) {
-		if ($functionAs !== null) {
-			$this->functionAs = $functionAs;
-		}
-
-		return $this->functionAs;
+		$bk->appendAs($this->as_());
 	}
 }

@@ -183,14 +183,18 @@ class SQL {
 		return $this->function_(Functions::UPPER, new Field($sql));
 	}
 
-	public function AS_($columnAs) {
+	public function AS_($as) {
 		$lastCall = $this->getLastCall();
 
-		if($lastCall instanceof Field){
-			$lastCall->columnAs($columnAs);
-		} elseif($lastCall instanceof Functions){
-			$lastCall->functionAs($columnAs);
+		if ($lastCall === null) {
+			throw new \Exception;
 		}
+
+		if (!in_array('FluentSql\\AsAble', class_uses($lastCall))) {
+			throw new \Exception;
+		}
+
+		$lastCall->as_($as);
 
 		return $this;
 	}
@@ -435,9 +439,17 @@ class SQL {
 		foreach (func_get_args() as $field) {
 			if (is_array($field)) {
 				list($field, $asc) = $field;
+				if (is_string($asc)) {
+					if (trim(strtolower($asc)) == 'asc') {
+						$asc = true;
+					} else {
+						$asc = false;
+					}
+				}
 			} else {
 				$asc = true;
 			}
+
 
 			$orderBy = new OrderBy($field, $asc);
 			$this->orderBy []= $orderBy;

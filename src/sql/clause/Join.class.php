@@ -10,6 +10,8 @@
 namespace FluentSql;
 
 class Join implements ClauseBuild {
+	use AsAble;
+
 	const INNER_JOIN = "INNER JOIN";
 	const LEFT_JOIN = "LEFT JOIN";
 	const LEFT_OUTER_JOIN = "LEFT OUTER JOIN";
@@ -31,6 +33,7 @@ class Join implements ClauseBuild {
 	public function build(Breakdown $bk, $tabs) {
 		$bk->append(" ".$this->joinType);
 		$bk->append(" ".$this->table);
+		$bk->appendAs($this->as_());
 		$this->buildUsing($bk, $tabs);
 		$this->buildOn($bk, $tabs);
 	}

@@ -1,4 +1,8 @@
 <?php
+// trait
+require_once(__DIR__.'/trait/AsAble.trait.php');
+
+// core
 require_once(__DIR__.'/sql/Breakdown.class.php');
 require_once(__DIR__.'/sql/SQL.class.php');
 require_once(__DIR__.'/sql/StaticSQL.class.php');

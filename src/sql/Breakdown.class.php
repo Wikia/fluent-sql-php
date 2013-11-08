@@ -19,6 +19,13 @@ class Breakdown {
 		$this->sql .= $str;
 	}
 
+	public function appendAs($as) {
+		if ($as !== null) {
+			$this->append(" AS");
+			$this->append(" ".$as);
+		}
+	}
+
 	public function addParameter($parameter){
 		$this->parameters[] = $parameter;
 	}
