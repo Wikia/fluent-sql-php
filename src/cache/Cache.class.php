@@ -11,7 +11,7 @@ namespace FluentSql;
 
 abstract class Cache {
 	protected function getKey(Breakdown $breakDown) {
-		return md5($breakDown->getSql().implode(',', $breakDown->getParameters()));
+		return sha1($breakDown->getSql().implode(',', $breakDown->getParameters()));
 	}
 
 	abstract public function get(Breakdown $breakDown, $key=null);
