@@ -506,6 +506,10 @@ class SQL {
 		return $this->called($offset);
 	}
 
+	/**
+	 * @param $ttl
+	 * @return SQL
+	 */
 	public function cache($ttl) {
 		$this->cacheTtl = $ttl;
 
@@ -515,6 +519,7 @@ class SQL {
 	public function run($db, callable $callback, $key=null) {
 		$breakDown = $this->build();
 		$cache = $this->getCache();
+		$key = isset($key) ? $key : $cache->generateKey($breakDown);
 		$result = null;
 
 		if ($this->cacheEnabled()) {
@@ -524,7 +529,7 @@ class SQL {
 		if ($result === false) {
 			$result = $this->query($db, $breakDown, $callback);
 
-			if ($this->cacheEnabled()) {
+			if ($this->cacheEnabled() && $result) {
 				$cache->set($breakDown, $result, $this->cacheTtl, $key);
 			}
 		}
@@ -948,8 +953,17 @@ class SQL {
 		return $this->cacheTtl > 0;
 	}
 
+	/**
+	 * @return Cache
+	 */
 	protected function getCache() {
-		return new ProcessCache();
+		static $cache = null;
+
+		if ($cache === null) {
+			$cache = new ProcessCache();
+		}
+
+		return $cache;
 	}
 
 	/**
