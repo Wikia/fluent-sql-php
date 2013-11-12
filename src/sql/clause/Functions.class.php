@@ -34,12 +34,16 @@ class Functions implements ClauseBuild {
 
 		if ($this->function != null) {
 			$bk->append(" ". $this->function);
-			$bk->append(" (");
+			$bk->append("(");
 			$fieldFunctionOpenedParenthesis = true;
 		}
 
 		$doCommaField = false;
 		foreach ($this->functionFields as $field) {
+			if ($field === null) {
+				continue;
+			}
+
 			if ($doCommaField) {
 				$bk->append(",");
 			} else {

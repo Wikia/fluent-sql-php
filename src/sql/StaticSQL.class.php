@@ -56,7 +56,15 @@ class StaticSQL {
 	public static function LOWER($sql){
 		return self::getSql()->LOWER($sql);
 	}
+
 	public static function UPPER($sql){
 		return self::getSql()->UPPER($sql);
+	}
+
+	/**
+	 * @return SQL
+	 */
+	public static function NOW() {
+		return self::getSql()->NOW();
 	}
 }

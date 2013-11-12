@@ -1,6 +1,7 @@
 <?php
 // trait
 require_once(__DIR__.'/trait/AsAble.trait.php');
+require_once(__DIR__.'/trait/IntervalAble.trait.php');
 
 // core
 require_once(__DIR__.'/sql/Breakdown.class.php');
@@ -35,6 +36,9 @@ require_once( __DIR__ . '/sql/clause/Using.class.php' );
 require_once( __DIR__ . '/sql/clause/Values.class.php' );
 require_once( __DIR__ . '/sql/clause/Where.class.php' );
 require_once( __DIR__ . '/sql/clause/With.class.php' );
+
+// functions
+require_once( __DIR__ . '/sql/functions/Now.class.php' );
 
 // cache
 require_once(__DIR__.'/cache/Cache.class.php');

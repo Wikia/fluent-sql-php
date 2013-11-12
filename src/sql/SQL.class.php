@@ -183,17 +183,18 @@ class SQL {
 		return $this->function_(Functions::UPPER, new Field($sql));
 	}
 
+	public function NOW() {
+		return $this->function_(new Now());
+	}
+
 	public function AS_($as) {
 		$lastCall = $this->getLastCall();
 
-		if ($lastCall === null) {
+		if ($lastCall === null || !self::checkTrait($lastCall, 'AsAble')) {
 			throw new \Exception;
 		}
 
-		if (!in_array('FluentSql\\AsAble', class_uses($lastCall))) {
-			throw new \Exception;
-		}
-
+		/** @var AsAble $lastCall */
 		$lastCall->as_($as);
 
 		return $this;
@@ -326,6 +327,14 @@ class SQL {
 		$this->into = new Into($table);
 
 		return $this->called($this->into);
+	}
+
+	public function PLUS_INTERVAL($amount, $period='day') {
+		return $this->interval('+', $amount, $period);
+	}
+
+	public function MINUS_INTERVAL($amount, $period='day') {
+		return $this->interval('-', $amount, $period);
 	}
 
 	public function VALUE(/** args */) {
@@ -870,6 +879,18 @@ class SQL {
 		}
 	}
 
+	private function interval($type, $amount, $period) {
+		$function = $this->getLastFunction();
+
+		if ($function === null || !self::checkTrait($function, 'IntervalAble')) {
+			throw new \Exception;
+		}
+
+		/** @var IntervalAble $function */
+		$function->intervalType($amount, $type, $period);
+		return $this;
+	}
+
 	private function whereOp($value, $op, $convertToValue=true) {
 		$condition = $this->getLastCondition();
 
@@ -890,8 +911,11 @@ class SQL {
 		return $this->called($condition);
 	}
 
-	private function function_($functionName, Field $field) {
-		$function = new Functions($functionName, $field);
+	private function function_($function, Field $field=null) {
+		if (!($function instanceof Functions)) {
+			$function = new Functions($function, $field);
+		}
+
 		$this->functions []= $function;
 		return $this->called($function);
 	}
@@ -914,6 +938,18 @@ class SQL {
 	private function getLastCall() {
 		$size = count($this->callOrder);
 		return $size > 0 ? $this->callOrder[$size - 1] : null;
+	}
+
+	private function getLastFunction() {
+		$size = count($this->callOrder);
+
+		for ($i = $size - 1; $i >= 0; --$i) {
+			if ($this->callOrder[$i] instanceof Functions) {
+				return $this->callOrder[$i];
+			}
+		}
+
+		return null;
 	}
 
 	private function getLastCondition() {
@@ -947,6 +983,10 @@ class SQL {
 		}
 
 		return $reflections[$type]->newInstanceArgs($args);
+	}
+
+	private static function checkTrait($class, $trait) {
+		return in_array("FluentSql\\{$trait}", class_uses($class));
 	}
 
 	protected function cacheEnabled() {
