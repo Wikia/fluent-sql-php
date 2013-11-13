@@ -121,15 +121,26 @@ class SQL {
 		return $this->called($this->update);
 	}
 
-	public function INSERT() {
+	public function INSERT($table=null) {
 		$this->type = new Type(Type::INSERT);
+		$this->called($this->type);
 
-		return $this->called($this->type);
+		if ($table !== null) {
+			$this->INTO($table);
+		}
+
+		return $this;
 	}
 
-	public function DELETE() {
+	public function DELETE($table=null) {
 		$this->type = new Type(Type::DELETE);
-		return $this->called($this->type);
+		$this->called($this->type);
+
+		if ($table !== null) {
+			$this->FROM($table);
+		}
+
+		return $this;
 	}
 
 	public function DISTINCT() {
@@ -1056,11 +1067,18 @@ class SQL {
 		return $callback($db->query($sql));
 	}
 
-	protected function injectParams($db, $preparedSql, $params) {
+	public function injectParams($db, Breakdown $breakDown) {
+		$sql = $breakDown->getSql();
+		$params = $breakDown->getParameters();
+
 		foreach ($params as $p) {
-			$preparedSql = preg_replace('/\?/', "'".addslashes($p)."'", $preparedSql, 1);
+			$sql = preg_replace('/\?/', "'".addslashes($p)."'", $sql, 1);
 		}
 
-		return $preparedSql;
+		return $sql;
+	}
+
+	public function __toString() {
+		return $this->build()->getSql();
 	}
 }
