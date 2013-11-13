@@ -56,6 +56,10 @@ class SQL {
 	/** @var Database */
 	protected $db;
 
+	protected $rawSql;
+
+	protected $rawParameters;
+
 	private function called($call) {
 		$this->callOrder []= $call;
 
@@ -68,6 +72,13 @@ class SQL {
 
 	public function getType() {
 		return $this->type->type();
+	}
+
+	public function RAW($sql, $params=[]) {
+		$this->rawSql = $sql;
+		$this->rawParameters = $params;
+
+		return $this;
 	}
 
 	public function WITH($name, SQL $sql) {
@@ -185,6 +196,10 @@ class SQL {
 
 	public function NOW() {
 		return $this->function_(new Now());
+	}
+
+	public function CURDATE() {
+		return $this->function_(new CurDate());
 	}
 
 	public function AS_($as) {
@@ -525,25 +540,25 @@ class SQL {
 		return $this;
 	}
 
-	public function run($db, callable $callback, $key=null) {
+	public function run($db, callable $callback, $cacheKey=null, $defaultReturn=[]) {
 		$breakDown = $this->build();
 		$cache = $this->getCache();
-		$key = isset($key) ? $key : $cache->generateKey($breakDown);
-		$result = null;
+		$cacheKey = isset($cacheKey) ? $cacheKey : $cache->generateKey($breakDown);
+		$result = false;
 
 		if ($this->cacheEnabled()) {
-			$result = $cache->get($breakDown, $key);
+			$result = $cache->get($breakDown, $cacheKey);
 		}
 
 		if ($result === false) {
 			$result = $this->query($db, $breakDown, $callback);
 
 			if ($this->cacheEnabled() && $result) {
-				$cache->set($breakDown, $result, $this->cacheTtl, $key);
+				$cache->set($breakDown, $result, $this->cacheTtl, $cacheKey);
 			}
 		}
 
-		return $result;
+		return $result === false ? $defaultReturn : $result;
 	}
 
 	public function build($bk=null, $tabs=0) {
@@ -551,29 +566,36 @@ class SQL {
 			$bk = new Breakdown();
 		}
 
-		$this->doCommaField = false;
+		if ($this->rawSql != null) {
+			$bk->append($this->rawSql);
+			foreach ($this->rawParameters as $param) {
+				$bk->addParameter($param);
+			}
+		} else {
+			$this->doCommaField = false;
 
-		$this->buildClauseAllCTEs($bk, $tabs);
-		$this->buildClauseType($bk, $tabs);
-		$this->buildClauseAllDistinctOnColumns($bk, $tabs);
-		$this->buildClauseAllDistinctColumns($bk, $tabs);
-		$this->buildClauseAllFunctions($bk, $tabs);
-		$this->buildClauseAllFields($bk, $tabs);
-		$this->buildClauseInto($bk, $tabs);
-		$this->buildClauseUpdate($bk, $tabs);
-		$this->buildClauseAllSet($bk, $tabs);
-		$this->buildClauseFrom($bk, $tabs);
-		$this->buildClauseAllJoin($bk, $tabs);
-		$this->buildClauseWhere($bk, $tabs);
-		$this->buildClauseAllUnion($bk, $tabs);//TODO: find a resolution to whether where or union comes first
-		$this->buildClauseAllIntersect($bk, $tabs);
-		$this->buildClauseAllExcept($bk, $tabs);
-		$this->buildClauseAllGroupBy($bk, $tabs);
-		$this->buildClauseAllHaving($bk, $tabs);
-		$this->buildClauseAllValues($bk, $tabs);
-		$this->buildClauseAllOrderBy($bk, $tabs);
-		$this->buildClauseLimit($bk, $tabs);
-		$this->buildClauseOffset($bk, $tabs);
+			$this->buildClauseAllCTEs($bk, $tabs);
+			$this->buildClauseType($bk, $tabs);
+			$this->buildClauseAllDistinctOnColumns($bk, $tabs);
+			$this->buildClauseAllDistinctColumns($bk, $tabs);
+			$this->buildClauseAllFunctions($bk, $tabs);
+			$this->buildClauseAllFields($bk, $tabs);
+			$this->buildClauseInto($bk, $tabs);
+			$this->buildClauseUpdate($bk, $tabs);
+			$this->buildClauseAllSet($bk, $tabs);
+			$this->buildClauseFrom($bk, $tabs);
+			$this->buildClauseAllJoin($bk, $tabs);
+			$this->buildClauseWhere($bk, $tabs);
+			$this->buildClauseAllUnion($bk, $tabs);//TODO: find a resolution to whether where or union comes first
+			$this->buildClauseAllIntersect($bk, $tabs);
+			$this->buildClauseAllExcept($bk, $tabs);
+			$this->buildClauseAllGroupBy($bk, $tabs);
+			$this->buildClauseAllHaving($bk, $tabs);
+			$this->buildClauseAllValues($bk, $tabs);
+			$this->buildClauseAllOrderBy($bk, $tabs);
+			$this->buildClauseLimit($bk, $tabs);
+			$this->buildClauseOffset($bk, $tabs);
+		}
 
 		return $bk;
 	}
@@ -986,7 +1008,18 @@ class SQL {
 	}
 
 	private static function checkTrait($class, $trait) {
-		return in_array("FluentSql\\{$trait}", class_uses($class));
+		static $traits = [];
+		$askingClass = get_class($class);
+
+		if (!isset($traits[$askingClass])) {
+			$traits[$askingClass] = [];
+
+			do {
+				$traits[$askingClass] = array_merge(class_uses($class), $traits[$askingClass]);
+			} while ($class = get_parent_class($class));
+		}
+
+		return in_array("FluentSql\\{$trait}", $traits[$askingClass]);
 	}
 
 	protected function cacheEnabled() {
@@ -1020,7 +1053,7 @@ class SQL {
 		}
 
 		$sql = $this->injectParams($db, $breakDown->getSql(), $breakDown->getParameters());
-		return $callback($db, $db->query($sql));
+		return $callback($db->query($sql));
 	}
 
 	protected function injectParams($db, $preparedSql, $params) {

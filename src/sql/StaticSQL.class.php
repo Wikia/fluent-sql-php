@@ -67,4 +67,15 @@ class StaticSQL {
 	public static function NOW() {
 		return self::getSql()->NOW();
 	}
+
+	/**
+	 * @return SQL
+	 */
+	public static function CURDATE() {
+		return self::getSql()->CURDATE();
+	}
+
+	public static function RAW($sql, $params=[]) {
+		return self::getSql()->RAW($sql, $params);
+	}
 }
