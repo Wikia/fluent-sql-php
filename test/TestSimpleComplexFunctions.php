@@ -13,8 +13,8 @@ function test() {
 function test2() {
 	$expected =
 		" WITH LatestOrders AS (" .
-		"		SELECT SUM ( COUNT ( ID ) )," .
-		"				COUNT ( MAX ( n_items ) ), " .
+		"		SELECT SUM( COUNT( ID ) )," .
+		"				COUNT( MAX( n_items ) ), " .
 		"				CustomerName " .
 		"			FROM dbo.Orders" .
 		"			RIGHT JOIN Customers AS c" .
@@ -27,7 +27,7 @@ function test2() {
 		" SELECT ".
 		"    Customers.*, ".
 		"    Orders.OrderTime AS LatestOrderTime, ".
-		"    ( SELECT COUNT ( * ) " .
+		"    ( SELECT COUNT( * ) " .
 		"		FROM dbo.OrderItems " .
 		"		WHERE OrderID IN ".
 		"        ( SELECT ID FROM dbo.Orders WHERE CustomerID = Customers.ID ) ) ".
