@@ -180,7 +180,11 @@ class SQL {
 		return $this;
 	}
 
-	public function WHEN($when) {
+	public function WHEN_FIELD($when) {
+		return $this->WHEN($when, false);
+	}
+
+	public function WHEN($when, $convertToValues=true) {
 		$case = $this->getLast('Case_');
 
 		if ($case === null) {
@@ -188,7 +192,8 @@ class SQL {
 		}
 
 		if (!($when instanceof Condition) && !($when instanceof SQL)) {
-			$when = new Condition(new Values($when));
+			$when = $convertToValues ? new Values($when) : $when;
+			$when = new Condition($when);
 		}
 
 		$this->called($when);
@@ -320,13 +325,14 @@ class SQL {
 		$column2 = isset($args[1]) ? $args[1] : null;
 
 		$on = new On($column1, $column2);
-		$join = $this->getLastJoin();
+		$join = $this->getLast('Join');
 
 		if ($join === null) {
 			// TODO: make a sql exception?
 			throw new Exception('using ON without a JOIN');
 		}
 
+		/** @var Join $join */
 		$join->addOn($on);
 
 		return $this->called($on);
@@ -356,7 +362,13 @@ class SQL {
 	}
 
 	public function USING(/** args */) {
-		$join = $this->getLastJoin();
+		$join = $this->getLast('Join');
+
+		if ($join === null) {
+			throw new \Exception('unable to find JOIN');
+		}
+
+		/** @var Join $join */
 
 		foreach (func_get_args() as $column) {
 			$using = new Using($column);
@@ -964,7 +976,7 @@ class SQL {
 	}
 
 	private function interval($type, $amount, $period) {
-		$function = $this->getLastFunction();
+		$function = $this->getLast('Function');
 
 		if ($function === null || !self::checkTrait($function, 'IntervalAble')) {
 			throw new \Exception;
@@ -1004,36 +1016,9 @@ class SQL {
 		return $this->called($function);
 	}
 
-	/**
-	 * @return Join|null
-	 */
-	private function getLastJoin() {
-		$size = count($this->callOrder);
-
-		for ($i = $size - 1; $i >= 0; --$i) {
-			if ($this->callOrder[$i] instanceof Join) {
-				return $this->callOrder[$i];
-			}
-		}
-
-		return null;
-	}
-
 	private function getLastCall() {
 		$size = count($this->callOrder);
 		return $size > 0 ? $this->callOrder[$size - 1] : null;
-	}
-
-	private function getLastFunction() {
-		$size = count($this->callOrder);
-
-		for ($i = $size - 1; $i >= 0; --$i) {
-			if ($this->callOrder[$i] instanceof Functions) {
-				return $this->callOrder[$i];
-			}
-		}
-
-		return null;
 	}
 
 	private function getLastCondition() {

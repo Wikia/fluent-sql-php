@@ -46,4 +46,28 @@ class CaseQueryTest extends FluentSqlTest {
 
 		$this->assertEquals($expected, $actual);
 	}
+
+	public function testWhereCase() {
+		$expected = "
+			SELECT *
+			FROM someTable
+			WHERE (
+				CASE
+					WHEN date IS NOT NULL THEN ?
+					ELSE ?
+					END
+				) = ?
+		";
+
+		$actual = (new SQL)
+			->SELECT_ALL()
+			->FROM('someTable')
+			->WHERE(
+				StaticSQL::CASE_()
+					->WHEN_FIELD('date')->IS_NOT_NULL()->THEN(1)
+					->ELSE_(0)
+			)->EQUAL_TO(1);
+
+		$this->assertEquals($expected, $actual);
+	}
 }
