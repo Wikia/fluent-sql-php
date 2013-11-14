@@ -16,9 +16,18 @@ class Field implements ClauseBuild {
 
 	/** @var SQL */
 	protected $fieldSql;
+
+	/** @var Functions */
 	protected $function;
+
+	/** @var array of Values */
 	protected $values;
+
+	/** @var Condition */
 	protected $condition; //Condition can also be in field
+
+	/** @var Case_ */
+	protected $case;
 
 	public function __construct( /*...*/ ) {
 		$argc = func_num_args();
@@ -43,6 +52,8 @@ class Field implements ClauseBuild {
 				$this->condition = $arg;
 			} elseif ($arg instanceof SQL) {
 				$this->fieldSql = $arg;
+			} elseif ($arg instanceof Case_) {
+				$this->case = $arg;
 			} else { // is_string
 				$this->column = $arg;
 			}
@@ -91,6 +102,10 @@ class Field implements ClauseBuild {
 
 		if ($this->condition != null) {
 			$this->condition->build($bk, $tabs);
+		}
+
+		if ($this->case != null) {
+			$this->case->build($bk, $tabs);
 		}
 
 		$bk->appendAs($this->as_());

@@ -75,6 +75,13 @@ class StaticSQL {
 		return self::getSql()->CURDATE();
 	}
 
+	/**
+	 * @return SQL
+	 */
+	public static function CASE_() {
+		return self::getSql()->CASE_();
+	}
+
 	public static function RAW($sql, $params=[]) {
 		return self::getSql()->RAW($sql, $params);
 	}

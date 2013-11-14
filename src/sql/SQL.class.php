@@ -10,7 +10,6 @@ class SQL {
 
 	protected $fields = [];
 	protected $functions = [];
-	protected $cases = [];
 	protected $set = [];
 	protected $distinctColumns = [];
 	protected $distinctOnColumns = [];
@@ -173,6 +172,58 @@ class SQL {
 		return $this;
 	}
 
+	public function CASE_($value=null) {
+		$case = new Case_($value);
+		$this->called($case);
+		$this->FIELD($case);
+
+		return $this;
+	}
+
+	public function WHEN($when) {
+		$case = $this->getLast('Case_');
+
+		if ($case === null) {
+			throw new \Exception;
+		}
+
+		if (!($when instanceof Condition) && !($when instanceof SQL)) {
+			$when = new Condition(new Values($when));
+		}
+
+		$this->called($when);
+		/** @var Case_ $case */
+		$case->addWhen($when);
+
+		return $this;
+	}
+
+	public function THEN($then) {
+		$case = $this->getLast('Case_');
+
+		if ($case === null) {
+			throw new \Exception;
+		}
+
+		/** @var Case_ $case */
+		$case->addThen($then);
+
+		return $this;
+	}
+
+	public function ELSE_($else) {
+		$case = $this->getLast('Case_');
+
+		if ($case === null) {
+			throw new \Exception;
+		}
+
+		/** @var Case_ $case */
+		$case->else_($else);
+
+		return $this;
+	}
+
 	/**
 	 * @param $sql
 	 * @return SQL
@@ -214,9 +265,9 @@ class SQL {
 	}
 
 	public function AS_($as) {
-		$lastCall = $this->getLastCall();
+		$lastCall = $this->getLast('AsAble', 'trait');
 
-		if ($lastCall === null || !self::checkTrait($lastCall, 'AsAble')) {
+		if ($lastCall === null) {
 			throw new \Exception;
 		}
 
@@ -928,7 +979,7 @@ class SQL {
 		$condition = $this->getLastCondition();
 
 		if ($condition == null) {
-			throw new Exception('unable to get last CONDITION');
+			throw new \Exception('unable to get last CONDITION');
 		}
 
 		$condition->equality($op);
@@ -996,6 +1047,7 @@ class SQL {
 			}
 		}
 
+		// then check where clauses
 		if ($this->where != null && count($this->where->conditions()) > 0) {
 			$conditions = $this->where->conditions();
 			$lastWhereCond = $conditions[count($conditions) - 1];
@@ -1003,6 +1055,28 @@ class SQL {
 			if ($lastWhereCond instanceof Condition) {
 				return $lastWhereCond;
 			}
+		}
+
+		return $this->getLast('Condition');
+	}
+
+	private function getLast($type, $checkProperty='class') {
+		$size = count($this->callOrder);
+
+		for ($i = $size - 1; $i >= 0; --$i) {
+			switch ($checkProperty) {
+				case 'class':
+					if (is_a($this->callOrder[$i], "FluentSql\\$type")) {
+						return $this->callOrder[$i];
+					}
+					break;
+				case 'trait':
+					if (self::checkTrait($this->callOrder[$i], $type)) {
+						return $this->callOrder[$i];
+					}
+					break;
+			}
+
 		}
 
 		return null;
