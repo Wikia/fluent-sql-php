@@ -2,77 +2,120 @@
 namespace FluentSql;
 
 class SQL {
+	/**
+	 * order in which relevant functions are called so future calls can modify them
+	 * (like ->EQUAL_TO() modifying ->WHERE())
+	 * @var array
+	 */
 	protected $callOrder = [];
+
+	/** @var array with queries this statement uses */
 	protected $withQueries = [];
 
-	/** @var Type */
+	/** @var Type type of query (select, update, delete, etc)*/
 	protected $type;
 
+	/** @var array Fields being selected */
 	protected $fields = [];
+
+	/** @var array Functions being used */
 	protected $functions = [];
+
+	/** @var array SET statements */
 	protected $set = [];
+
+	/** @var array DISTINCT statements */
 	protected $distinctColumns = [];
+
+	/** @var array DISTINCTON statements */
 	protected $distinctOnColumns = [];
 
-	/** @var From */
+	/** @var From FROM statement*/
 	protected $from;
 
-	/** @var Update */
+	/** @var Update UPDATE statement*/
 	protected $update;
 
-	/** @var Into */
+	/** @var Into INTO statement*/
 	protected $into;
 
-	/** @var bool */
+	/** @var bool whether or not this SQL has added a comma to it's $fields output */
 	protected $doCommaField = false;
 
+	/** @var array Values being used in this SQL (such as parameters, other SQL as parameters) */
 	protected $values = [];
+
+	/** @var array Join objects this SQL uses */
 	protected $joins = [];
+
+	/** @var array Union objects this SQL uses */
 	protected $union = [];
+
+	/** @var array Intersect objects this SQL uses */
 	protected $intersect = [];
+
+	/** @var array Except objects this SQL uses */
 	protected $except = [];
 
-	/** @var Where */
+	/** @var Where WHERE statement wrapper*/
 	protected $where;
 
+	/** @var array OrderBy objects specifying how to order the results of this SQL */
 	protected $orderBy = [];
+
+	/** @var array GroupBy objects specifying how to group this SQL */
 	protected $groupBy = [];
 
-	/** @var Having */
+	/** @var Having HAVING statement */
 	protected $having;
 
-	protected $returning = [];
-
-	/** @var Limit */
+	/** @var Limit LIMIT statement */
 	protected $limit;
 
-	/** @var Offset */
+	/** @var Offset OFFSET statement */
 	protected $offset;
 
-	/** @var Cache */
+	/** @var int how long to cache the results of this query */
 	protected $cacheTtl = 0;
 
-	/** @var Database */
+	/** @var mixed some database object to run this SQL against */
 	protected $db;
 
+	/** @var string raw sql query to run, skipping the sql constructs this class provides */
 	protected $rawSql;
 
+	/** @var array parameters for $rawSql (if it is a prepared statement) */
 	protected $rawParameters;
 
-	private function called($call) {
+	/**
+	 * add a clause to the list of clauses that have been called
+	 *
+	 * @param ClauseBuild $call the call that was just made
+	 * @return SQL
+	 */
+	private function called(ClauseBuild $call) {
 		$this->callOrder []= $call;
 
 		return $this;
 	}
 
+	/** @return bool whether or not the type for this SQL has been specified yet */
 	public function hasType() {
 		return $this->type != null;
 	}
 
+	/** @return string the type of query (SELECT, UPDATE, etc) */
 	public function getType() {
 		return $this->type->type();
 	}
 
+	/**
+	 * set this object to run a raw sql query
+	 *
+	 * @param string $sql the sql to run
+	 * @param array $params parameters to pass to $sql
+	 * @return SQL
+	 */
 	public function RAW($sql, $params=[]) {
 		$this->rawSql = $sql;
 		$this->rawParameters = $params;
@@ -80,6 +123,13 @@ class SQL {
 		return $this;
 	}
 
+	/**
+	 * WITH statement
+	 *
+	 * @param $name
+	 * @param SQL $sql
+	 * @return SQL
+	 */
 	public function WITH($name, SQL $sql) {
 		$with = new With($name,$sql,false);
 		$this->withQueries []= $with;
@@ -87,6 +137,13 @@ class SQL {
 		return $this->called($with);
 	}
 
+	/**
+	 * WITH RECURSIVE statement
+	 *
+	 * @param $name
+	 * @param SQL $sql
+	 * @return SQL
+	 */
 	public function WITH_RECURSIVE($name, SQL $sql) {
 		$with = new With($name,$sql,true);
 		$this->withQueries []= $with;
@@ -94,14 +151,22 @@ class SQL {
 		return $this->called($with);
 	}
 
+	/**
+	 * shortcut for SELECT('*')
+	 *
+	 * @return SQL
+	 */
 	public function SELECT_ALL() {
 		return $this->SELECT("*");
 	}
 
 	/**
+	 * set this query type as a SELECT query, and optionally add some Fields to select
+	 *
+	 * @param string $args,...
 	 * @return SQL
 	 */
-	public function SELECT() {
+	public function SELECT(/** args */) {
 		$this->type = new Type(Type::SELECT);
 		$this->called($this->type);
 
@@ -112,6 +177,12 @@ class SQL {
 		return $this;
 	}
 
+	/**
+	 * set this query to an UPDATE type
+	 *
+	 * @param string $table the table to update
+	 * @return SQL
+	 */
 	public function UPDATE($table) {
 		$this->type = new Type(Type::UPDATE);
 		$this->called($this->type);
@@ -120,6 +191,12 @@ class SQL {
 		return $this->called($this->update);
 	}
 
+	/**
+	 * set this query to an INSERT type
+	 *
+	 * @param string|null $table the table to insert into
+	 * @return $this
+	 */
 	public function INSERT($table=null) {
 		$this->type = new Type(Type::INSERT);
 		$this->called($this->type);
@@ -131,6 +208,12 @@ class SQL {
 		return $this;
 	}
 
+	/**
+	 * set this query to a DELETE type
+	 *
+	 * @param string|null $table the table to delete from
+	 * @return $this
+	 */
 	public function DELETE($table=null) {
 		$this->type = new Type(Type::DELETE);
 		$this->called($this->type);
@@ -142,7 +225,13 @@ class SQL {
 		return $this;
 	}
 
-	public function DISTINCT() {
+	/**
+	 * add a DISTINCT statement
+	 *
+	 * @param string $arg,... distinct column to add
+	 * @return SQL
+	 */
+	public function DISTINCT(/** args */) {
 		foreach (func_get_args() as $col) {
 			$distinct = new Distinct($col);
 			$this->distinctColumns []= $distinct;
@@ -152,7 +241,13 @@ class SQL {
 		return $this;
 	}
 
-	public function DISTINCT_ON() {
+	/**
+	 * add a DISTINCT ON statement
+	 *
+	 * @param string $arg,... distinct column to add
+	 * @return SQL
+	 */
+	public function DISTINCT_ON(/** args */) {
 		foreach (func_get_args() as $col) {
 			$distinctOn = new DistinctOn($col);
 			$this->distinctOnColumns []= $distinctOn;
@@ -162,7 +257,13 @@ class SQL {
 		return $this;
 	}
 
-	public function FIELD() {
+	/**
+	 * add a Field to this SQL
+	 *
+	 * @param string $arg,... field to add
+	 * @return SQL
+	 */
+	public function FIELD(/** args */) {
 		foreach (func_get_args() as $sql) {
 			$field = new Field($sql);
 			$this->fields []= $field;
@@ -172,6 +273,12 @@ class SQL {
 		return $this;
 	}
 
+	/**
+	 * add a CASE statement
+	 *
+	 * @param SQL|mixed|null $value
+	 * @return SQL
+	 */
 	public function CASE_($value=null) {
 		$case = new Case_($value);
 		$this->called($case);
@@ -180,10 +287,24 @@ class SQL {
 		return $this;
 	}
 
+	/**
+	 * case WHEN when comparing to a field (so it doesn't get quoted and escaped)
+	 *
+	 * @param string $when column to check
+	 * @return SQL
+	 */
 	public function WHEN_FIELD($when) {
 		return $this->WHEN($when, false);
 	}
 
+	/**
+	 * case WHEN
+	 *
+	 * @param mixed|SQL $when the value (column, integer, string, or SQL) to check
+	 * @param bool $convertToValues whether or not $when should be converted to a Values
+	 * @return SQL
+	 * @throws \Exception if there was no CASE statement called before
+	 */
 	public function WHEN($when, $convertToValues=true) {
 		$case = $this->getLast('Case_');
 
@@ -203,11 +324,18 @@ class SQL {
 		return $this;
 	}
 
+	/**
+	 * add a THEN statement (after a WHEN)
+	 *
+	 * @param mixed|SQL $then
+	 * @return SQL
+	 * @throws \Exception if there is no case statement
+	 */
 	public function THEN($then) {
 		$case = $this->getLast('Case_');
 
 		if ($case === null) {
-			throw new \Exception;
+			throw new \Exception('unable to find CASE statement');
 		}
 
 		/** @var Case_ $case */
@@ -216,11 +344,18 @@ class SQL {
 		return $this;
 	}
 
+	/**
+	 * add an ELSE statement (to a CASE)
+	 *
+	 * @param mixed|SQL $else
+	 * @return $this
+	 * @throws \Exception if there is no case statement
+	 */
 	public function ELSE_($else) {
 		$case = $this->getLast('Case_');
 
 		if ($case === null) {
-			throw new \Exception;
+			throw new \Exception('unable to find CASE statement');
 		}
 
 		/** @var Case_ $case */
@@ -237,43 +372,79 @@ class SQL {
 		return $this->function_(Functions::SUM, new Field($sql));
 	}
 
+	/**
+	 * @param $sql
+	 * @return SQL
+	 */
 	public function COUNT($sql) {
 		return $this->function_(Functions::COUNT, new Field($sql));
 	}
 
+	/**
+	 * @param $sql
+	 * @return SQL
+	 */
 	public function MAX($sql) {
 		return $this->function_(Functions::MAX, new Field($sql));
 	}
 
+	/**
+	 * @param $sql
+	 * @return SQL
+	 */
 	public function MIN($sql) {
 		return $this->function_(Functions::MIN, new Field($sql));
 	}
 
+	/**
+	 * @param $sql
+	 * @return SQL
+	 */
 	public function AVG($sql) {
 		return $this->function_(Functions::AVG, new Field($sql));
 	}
 
+	/**
+	 * @param $sql
+	 * @return SQL
+	 */
 	public function LOWER($sql) {
 		return $this->function_(Functions::LOWER, new Field($sql));
 	}
 
+	/**
+	 * @param $sql
+	 * @return SQL
+	 */
 	public function UPPER($sql) {
 		return $this->function_(Functions::UPPER, new Field($sql));
 	}
 
+	/**
+	 * @return SQL
+	 */
 	public function NOW() {
 		return $this->function_(new Now());
 	}
 
+	/**
+	 * @return SQL
+	 */
 	public function CURDATE() {
 		return $this->function_(new CurDate());
 	}
 
+	/**
+	 * attach an AS to a previously called statement
+	 * @param string $as alias for column, function, etc
+	 * @return SQL
+	 * @throws \Exception if there is no AsAble to attach to
+	 */
 	public function AS_($as) {
 		$lastCall = $this->getLast('AsAble', 'trait');
 
 		if ($lastCall === null) {
-			throw new \Exception;
+			throw new \Exception('unable to find AsAble');
 		}
 
 		/** @var AsAble $lastCall */
@@ -282,36 +453,71 @@ class SQL {
 		return $this;
 	}
 
+	/**
+	 * @param string $table
+	 * @return SQL
+	 */
 	public function FROM($table) {
 		$this->from = new From($table);
 
 		return $this->called($this->from);
 	}
 
+	/**
+	 * @param string $table
+	 * @return SQL
+	 */
 	public function LEFT_JOIN($table) {
 		return $this->JOIN($table, Join::LEFT_JOIN);
 	}
 
+	/**
+	 * @param string $table
+	 * @return SQL
+	 */
 	public function RIGHT_JOIN($table) {
 		return $this->JOIN($table, Join::RIGHT_JOIN);
 	}
 
+	/**
+	 * @param string $table
+	 * @return SQL
+	 */
 	public function INNER_JOIN($table) {
 		return $this->JOIN($table, Join::INNER_JOIN);
 	}
 
+	/**
+	 * @param string $table
+	 * @return SQL
+	 */
 	public function CROSS_JOIN($table) {
 		return $this->JOIN($table, Join::CROSS_JOIN);
 	}
 
+	/**
+	 * @param string $table
+	 * @return SQL
+	 */
 	public function LEFT_OUTER_JOIN($table) {
 		return $this->JOIN($table, Join::LEFT_OUTER_JOIN);
 	}
 
+	/**
+	 * @param string $table
+	 * @return SQL
+	 */
 	public function RIGHT_OUTER_JOIN($table) {
 		return $this->JOIN($table, Join::RIGHT_OUTER_JOIN);
 	}
 
+	/**
+	 * add a JOIN statement
+	 *
+	 * @param string $table table to join against
+	 * @param string $type type of join (inner, outer, etc)
+	 * @return SQL
+	 */
 	public function JOIN($table, $type=Join::INNER_JOIN) {
 		$join = new Join($type, $table);
 		$this->joins []= $join;
@@ -319,6 +525,11 @@ class SQL {
 		return $this->called($join);
 	}
 
+	/**
+	 * ON statement for a JOIN statement
+	 * @return SQL
+	 * @throws \Exception if there is no JOIN found
+	 */
 	public function ON() {
 		$args = func_get_args();
 		$column1 = $args[0];
@@ -329,7 +540,7 @@ class SQL {
 
 		if ($join === null) {
 			// TODO: make a sql exception?
-			throw new Exception('using ON without a JOIN');
+			throw new \Exception('using ON without a JOIN');
 		}
 
 		/** @var Join $join */
@@ -601,7 +812,7 @@ class SQL {
 	public function OFFSET($offset) {
 		$this->offset = new Offset($offset);
 
-		return $this->called($offset);
+		return $this->called($this->offset);
 	}
 
 	/**
