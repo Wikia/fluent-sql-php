@@ -188,10 +188,10 @@ class SQL {
 		$case = $this->getLast('Case_');
 
 		if ($case === null) {
-			throw new \Exception;
+			throw new \Exception('unable to find CASE statement');
 		}
 
-		if (!($when instanceof Condition) && !($when instanceof SQL)) {
+		if (!($when instanceof Condition) || $when instanceof SQL) {
 			$when = $convertToValues ? new Values($when) : $when;
 			$when = new Condition($when);
 		}

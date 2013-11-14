@@ -70,4 +70,60 @@ class CaseQueryTest extends FluentSqlTest {
 
 		$this->assertEquals($expected, $actual);
 	}
+
+	public function testComplex() {
+		$expected = "
+			SELECT
+				someCol,
+				(
+					CASE ( SELECT anotherCol FROM anotherTable WHERE id = '1' )
+						WHEN '5' THEN 'five'
+						WHEN '6' THEN 'six'
+						ELSE 'unknown'
+					END
+				) AS someCol2
+			FROM someTable
+			WHERE (
+				CASE
+					WHEN ( SELECT anotherCol FROM anotherTable WHERE id = '2' ) = 'someValue' THEN ( SELECT anotherCol2 FROM anotherTable WHERE id = '17' )
+				END
+			) = 'someOtherValue'
+				AND id = '98'
+			ORDER BY someCol2
+			LIMIT 5
+		";
+
+		$actual = (new SQL)
+			->SELECT('someCol')
+				->CASE_(
+					(new SQL)
+						->SELECT('anotherCol')
+						->FROM('anotherTable')
+						->WHERE('id')->EQUAL_TO(1)
+				)
+					->WHEN(5)->THEN('five')
+					->WHEN(6)->THEN('six')
+					->ELSE_('unknown')
+				->AS_('someCol2')
+			->FROM('someTable')
+			->WHERE(
+				StaticSQL::CASE_()
+					->WHEN(
+						(new SQL)
+							->SELECT('anotherCol')
+							->FROM('anotherTable')
+							->WHERE('id')->EQUAL_TO(2)
+					)->EQUAL_TO('someValue')->THEN(
+						(new SQL)
+							->SELECT('anotherCol2')
+							->FROM('anotherTable')
+							->WHERE('id')->EQUAL_TO(17)
+					)
+			)->EQUAL_TO('someOtherValue')
+				->AND_('id')->EQUAL_TO(98)
+			->ORDER_BY('someCol2')
+			->LIMIT(5);
+
+		$this->assertEquals($expected, $actual->injectParams(null, $actual->build()));
+	}
 }

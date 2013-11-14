@@ -60,7 +60,9 @@ class Case_ implements ClauseBuild {
 			$breakDown->append(' THEN');
 
 			if ($then instanceof SQL) {
+				$breakDown->append(' ( ');
 				$then->build($breakDown, $tabs);
+				$breakDown->append(' )');
 			} else {
 				$breakDown->append(' ?');
 				$breakDown->addParameter($then);
@@ -68,7 +70,9 @@ class Case_ implements ClauseBuild {
 		}
 
 		if ($this->else instanceof SQL) {
+			$breakDown->append(' ( ');
 			$this->else->build($breakDown, $tabs);
+			$breakDown->append(' )');
 		} elseif ($this->else !== null) {
 			$breakDown->append(' ELSE ?');
 			$breakDown->addParameter($this->else);
