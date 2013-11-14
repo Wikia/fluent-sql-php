@@ -1051,6 +1051,7 @@ class SQL {
 		for ($i = $size - 1; $i >= 0; --$i) {
 			switch ($checkProperty) {
 				case 'class':
+				case 'interface':
 					if (is_a($this->callOrder[$i], "FluentSql\\$type")) {
 						return $this->callOrder[$i];
 					}
