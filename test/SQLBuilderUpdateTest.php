@@ -1,9 +1,9 @@
 <?php
 namespace FluentSql;
 
-require_once(__DIR__.'/../init.php');
+require_once(__DIR__.'/init.php');
 
-class TestSQLBuilderUpdate extends FluentSqlTest {
+class SQLBuilderUpdateTest extends FluentSqlTest {
 	public function testUpdate() {
 		$expected = "
 			UPDATE films

@@ -1,9 +1,9 @@
 <?php
 namespace FluentSql;
 
-require_once(__DIR__.'/../init.php' );
+require_once(__DIR__.'/init.php');
 
-class TestSQLBuilderDelete extends FluentSqlTest {
+class SQLBuilderDeleteTest extends FluentSqlTest {
 	public function test1() {
 		$expected = "
 			DELETE FROM products

@@ -1,9 +1,9 @@
 <?php
 namespace FluentSql;
 
-require_once(__DIR__.'/../init.php');
+require_once(__DIR__.'/init.php');
 
-class TestSQLOrderBy extends FluentSqlTest {
+class SQLOrderByTest extends FluentSqlTest {
 	public function testOrderBy() {
 		$expected = "
 			SELECT Customers.CustomerName, Orders.OrderID

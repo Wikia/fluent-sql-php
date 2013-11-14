@@ -1,9 +1,9 @@
 <?php
 namespace FluentSql;
 
-require_once(__DIR__.'/../init.php');
+require_once(__DIR__.'/init.php');
 
-class TestSQLBuilderInsert extends FluentSqlTest {
+class SQLBuilderInsertTest extends FluentSqlTest {
 	public function testInsert() {
 		$expected = "
 			INSERT INTO films (

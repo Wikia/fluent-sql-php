@@ -9,9 +9,9 @@
 
 namespace FluentSql;
 
-require_once( __DIR__ . '/../init.php' );
+require_once(__DIR__.'/init.php');
 
-class TestComplexQuery extends FluentSqlTest {
+class ComplexQueryTest extends FluentSqlTest {
 	public function test1() {
 		$expected = "
 			SELECT Customers.CustomerName, Orders.OrderID

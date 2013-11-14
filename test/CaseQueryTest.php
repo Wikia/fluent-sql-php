@@ -1,9 +1,9 @@
 <?php
 namespace FluentSql;
 
-require_once(__DIR__.'/../init.php');
+require_once(__DIR__.'/init.php');
 
-class TestCaseQuery extends FluentSqlTest {
+class CaseQueryTest extends FluentSqlTest {
 	public function testSimpleValueCase() {
 		$expected = "
 			SELECT
@@ -32,7 +32,7 @@ class TestCaseQuery extends FluentSqlTest {
 			SELECT
 				(
 					CASE
-						WHEN 1 > 0 THEN ?
+						WHEN ? > ? THEN ?
 						ELSE ?
 					END
 				)

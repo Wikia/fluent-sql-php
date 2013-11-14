@@ -1,9 +1,9 @@
 <?php
 namespace FluentSql;
 
-require_once( __DIR__ . '/../init.php' );
+require_once(__DIR__.'/init.php');
 
-class TestSimpleComplexFunctions extends FluentSqlTest {
+class SimpleComplexFunctionsTest extends FluentSqlTest {
 	public function testRecursiveComplexFunctions() {
 		$expected =
 			" WITH LatestOrders AS (" .
