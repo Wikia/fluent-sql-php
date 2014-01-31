@@ -852,12 +852,12 @@ class SQL {
 	 * run this query, fetching from/setting to the cache if there is a TTL defined
 	 *
 	 * @param mixed $db database to query against
-	 * @param callable $recordProcessor callback to process a row in the result set
+	 * @param callable|null $recordProcessor callback to process a row in the result set
 	 * @param mixed|array $defaultReturn default return value if we're unable to query and there is no cache value
 	 * @param bool $autoIterate whether or not this class should iterate over the results for us, or if callable will handle it
 	 * @return mixed|bool results returned by $callback processing of the db query result, or false on error
 	 */
-	public function runLoop($db, callable $recordProcessor, $defaultReturn=[], $autoIterate=true) {
+	public function runLoop($db, callable $recordProcessor=null, $defaultReturn=[], $autoIterate=true) {
 		$breakDown = $this->build();
 		$cache = $this->getCache();
 
@@ -882,7 +882,7 @@ class SQL {
 		return $result === false ? $defaultReturn : $result;
 	}
 
-	public function run($db, callable $callback, $defaultReturn=[]) {
+	public function run($db, callable $callback=null, $defaultReturn=[]) {
 		return $this->runLoop($db, $callback, $defaultReturn, false);
 	}
 
