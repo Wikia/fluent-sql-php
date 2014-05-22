@@ -18,7 +18,7 @@ class Into implements ClauseInterface {
 	}
 
 	public function build(Breakdown $bk, $tabs) {
-		$bk->append(Clause::line($tabs+1));
+		$bk->line($tabs + 1);
 		$bk->append(" INTO");
 		$bk->append(" ".$this->table);
 	}

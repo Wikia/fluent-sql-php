@@ -27,12 +27,12 @@ class With implements ClauseInterface {
 		$bk->append(" AS ");
 		if($this->sql != null){
 			$bk->append(" (");
-			$bk->append(Clause::line($tabs));
+			$bk->line($tabs);
 			$bk->tabs($tabs + 1);
 			$this->sql->build($bk, $tabs);
-			$bk->append(Clause::line($tabs));
+			$bk->line($tabs);
 			$bk->append(" )");
-			$bk->append(Clause::line(0));
+			$bk->line(0);
 		}
 	}
 

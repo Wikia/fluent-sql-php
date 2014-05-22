@@ -34,11 +34,12 @@ class Breakdown {
 	}
 
 	public function line($tabs){
-		$this->append(Clause::line($tabs));
+		$this->append("\n");
+		$this->tabs($tabs);
 	}
 
 	public function tabs($tabs){
-		$this->append(Clause::tabs($tabs));
+		$this->append(str_repeat("\t", $tabs));
 	}
 
 	public function getParameters() {

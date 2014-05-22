@@ -42,7 +42,7 @@ class Join implements ClauseInterface {
 	public function buildOn(Breakdown $bk, $tabs) {
 		$doOnJoinClause = true;
 		foreach ($this->on as $on) {
-			$bk->append(Clause::line($tabs+2));
+			$bk->line($tabs + 2);
 			if ($doOnJoinClause) {
 				$bk->append(" ON");
 				$doOnJoinClause = false;
@@ -59,7 +59,7 @@ class Join implements ClauseInterface {
 		foreach ($this->using as $using) {
 			/** @var Using $using */
 			if ($doUsingClause) {
-				$bk->append(Clause::line($tabs+2));
+				$bk->line($tabs + 2);
 				$bk->append(" USING");
 				$doUsingClause = false;
 			}

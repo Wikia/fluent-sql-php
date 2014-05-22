@@ -948,7 +948,7 @@ class SQL {
 		$doComma = false;
 		foreach ($this->withQueries as $with) {
 			/** @var Clause\With $with */
-			$bk->append(Clause\Clause::line($tabs));
+			$bk->line($tabs);
 
 			if ($doComma) {
 				$bk->append(',');
