@@ -1017,7 +1017,7 @@ class SQL {
 		}
 
 		foreach ($this->distinctColumns as $distinct) {
-			/** @var Clause\Distinct $discinct */
+			/** @var Clause\Distinct $distinct */
 			if ($doComma) {
 				$bk->append(',');
 				$bk->line($tabs + 2);
@@ -1030,7 +1030,7 @@ class SQL {
 				$doDistinctClause = false;
 			}
 
-			$discinct->build($bk, $tabs);
+			$distinct->build($bk, $tabs);
 		}
 	}
 
