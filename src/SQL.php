@@ -211,14 +211,15 @@ class SQL {
 	 * set this query to an INSERT type
 	 *
 	 * @param string|null $table the table to insert into
+	 * @param array|null $columns the list of columns for a VALUES insert
 	 * @return $this
 	 */
-	public function INSERT($table=null) {
+	public function INSERT($table=null, $columns=null) {
 		$this->type = new Clause\Type(Clause\Type::INSERT);
 		$this->called($this->type);
 
 		if ($table !== null) {
-			$this->INTO($table);
+			$this->INTO($table, $columns);
 		}
 
 		return $this;
@@ -639,8 +640,8 @@ class SQL {
 		return $this->EXCEPT($sql, true);
 	}
 
-	public function INTO($table) {
-		$this->into = new Clause\Into($table);
+	public function INTO($table, $columns=null) {
+		$this->into = new Clause\Into($table, $columns);
 
 		return $this->called($this->into);
 	}
@@ -663,8 +664,25 @@ class SQL {
 		return $this;
 	}
 
+	/**
+	 * @return SQL
+	 */
 	public function VALUES(/** args */) {
-		return call_user_func_array([$this, 'VALUE'], func_get_args());
+		$args = func_get_args();
+		if ($this->type->type() == Clause\Type::INSERT) {
+			if (count($args) == 1 && is_array($args[0])) {
+				$args = $args[0];
+			}
+
+			$newArgs = [];
+			foreach ($args as $valuesList) {
+				$sql = rtrim(str_repeat('?, ', count($valuesList)), ', ');
+				$newArgs []= StaticSQL::RAW($sql, $valuesList);
+			}
+			$args = $newArgs;
+		}
+
+		return call_user_func_array([$this, 'VALUE'], $args);
 	}
 
 	public function SET($field, $value, $isSql=false) {

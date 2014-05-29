@@ -37,4 +37,18 @@ class SQLBuilderInsertTest extends FluentSqlTestBase {
 
 		$this->assertEquals($expected, $actual);
 	}
+
+	public function testValues() {
+		$expected = "
+			INSERT INTO some_table (col1, col2, col3) VALUES ('1', '2', '3' ), ('4', '5', '6' )
+		";
+
+		$sql = (new SQL)
+			->INSERT()->INTO('some_table', ['col1', 'col2', 'col3'])
+			->VALUES([[1, 2, 3], [4, 5, 6]]);
+
+		$actual = $sql->injectParams(null, $sql->build());
+
+		$this->assertEquals($expected, $actual);
+	}
 }
