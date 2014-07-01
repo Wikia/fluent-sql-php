@@ -18,6 +18,6 @@ class Using implements ClauseInterface {
 	}
 
 	public function build(Breakdown $bk, $tabs) {
-		$bk->append(" (" . join(", ", $this->columns) . ")");
+		$bk->append(join(", ", $this->columns));
 	}
 }

@@ -165,6 +165,21 @@ class SQLBuilderSelectTest extends FluentSqlTestBase {
 						))
 						->AND_('some_col')->GREATER_THAN(5),
 				true
+			],
+			[
+				"
+				SELECT *
+				FROM a
+					LEFT JOIN b
+						USING (c1, c2, c3)
+				",
+				(new SQL)
+					->SELECT('*')
+					->FROM('a')
+						->LEFT_JOIN('b')
+						->USING('c1', 'c2')
+						->USING('c3'),
+				true
 			]
 		];
 	}
