@@ -72,7 +72,7 @@ class SQLBuilderSelectTest extends FluentSqlTestBase {
 				SELECT name
 				FROM products
 					LEFT JOIN items
-						USING item_id, name
+						USING (item_id, name)
 				WHERE price > ?
 				LIMIT 10
 				OFFSET 1
