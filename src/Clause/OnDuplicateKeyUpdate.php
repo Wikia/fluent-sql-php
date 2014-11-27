@@ -14,22 +14,24 @@ class OnDuplicateKeyUpdate implements ClauseInterface {
 	protected $columns;
 
 	public function __construct( $columns ) {
-		$this->columns = $columns;
+		$this->columns = [];
+		foreach ( $columns as $column => $value ) {
+			$this->columns[] = new Set( $column, $value );
+		}
 	}
 
 	public function build( Breakdown $bk, $tabs ) {
 		$bk->line( $tabs + 1 );
-		$bk->append( ' ON DUPLICATE KEY UPDATE' );
-		$bk->append( ' ' . $this->getAssignmentsClause() );
-	}
+		$bk->append( ' ON DUPLICATE KEY UPDATE ' );
+		$columnCount = count( $this->columns );
+		$columnIndex = 1;
+		/** @var Set $columnSet */
+		foreach ( $this->columns as $columnSet ) {
 
-	protected function getAssignmentsClause() {
-		$pairs = [];
-		foreach ( $this->columns as $column => $value ) {
-			$quotedValue = is_string( $value ) ? "'$value'" : $value;
-			$pairs[] = "$column = $quotedValue";
+			$columnSet->build( $bk, $tabs );
+			if ( $columnIndex++ < $columnCount ) {
+				$bk->append( ',' );
+			}
 		}
-
-		return implode( ', ', $pairs );
 	}
 }
